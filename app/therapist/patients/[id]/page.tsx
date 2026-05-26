@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ChevronLeft, TrendingUp, Play, Save, Target, Dumbbell, FileText } from "lucide-react";
@@ -22,13 +22,38 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
   const [selectedIdx, setSelectedIdx] = useState(0);
   const selected = sessions[selectedIdx];
 
+  const storageKey = `fv_treatment_plan_${patient.id}`;
+
   const [goals, setGoals] = useState(patient.treatmentGoals.join("\n"));
   const [exercises, setExercises] = useState(patient.practiceExercises.join("\n"));
   const [remarks, setRemarks] = useState(patient.treatmentRemarks);
   const [saved, setSaved] = useState(false);
+  const [hasUnsaved, setHasUnsaved] = useState(false);
+
+  // Load persisted plan on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        const plan = JSON.parse(raw);
+        if (plan.goals !== undefined) setGoals(plan.goals);
+        if (plan.exercises !== undefined) setExercises(plan.exercises);
+        if (plan.remarks !== undefined) setRemarks(plan.remarks);
+      }
+    } catch { /* ignore */ }
+  }, [storageKey]);
+
+  function handleFieldChange<T>(setter: (v: T) => void, value: T) {
+    setter(value);
+    setHasUnsaved(true);
+  }
 
   function handleSave() {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify({ goals, exercises, remarks, savedAt: new Date().toISOString() }));
+    } catch { /* ignore */ }
     setSaved(true);
+    setHasUnsaved(false);
     setTimeout(() => setSaved(false), 2000);
   }
 
@@ -249,27 +274,34 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
         style={{ background: "var(--color-surface)", borderColor: "var(--color-border)", boxShadow: "var(--shadow-sm)" }}
       >
         <div className="flex items-center justify-between mb-6">
-          <h3 className="font-bold text-[var(--color-navy)] text-sm">Treatment Plan</h3>
+          <div>
+            <h3 className="font-bold text-[var(--color-navy)] text-sm">Treatment Plan</h3>
+            {hasUnsaved && !saved && (
+              <p className="text-[11px] text-[#F59E0B] font-medium mt-0.5">Unsaved changes</p>
+            )}
+          </div>
           <motion.button
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             onClick={handleSave}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white transition-all"
+            aria-label={saved ? "Changes saved" : "Save treatment plan changes"}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all"
             style={{
-              background: saved ? "var(--color-green)" : "var(--color-gold)",
+              background: saved ? "#10B981" : hasUnsaved ? "var(--color-gold)" : "var(--color-gold)",
               color: saved ? "white" : "var(--color-navy)",
+              opacity: !hasUnsaved && !saved ? 0.6 : 1,
             }}
           >
-            <Save className="w-4 h-4" />
+            <Save className="w-4 h-4" aria-hidden="true" />
             {saved ? "Saved!" : "Save changes"}
           </motion.button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {[
-            { icon: Target, label: "Goals", val: goals, set: setGoals, placeholder: "One goal per line...", color: "#6366F1" },
-            { icon: Dumbbell, label: "Practice Exercises", val: exercises, set: setExercises, placeholder: "One exercise per line...", color: "#10B981" },
-            { icon: FileText, label: "Treatment Remarks", val: remarks, set: setRemarks, placeholder: "Clinical notes...", color: "var(--color-gold)" },
+            { icon: Target, label: "Goals", val: goals, set: (v: string) => handleFieldChange(setGoals, v), placeholder: "One goal per line...", color: "#6366F1" },
+            { icon: Dumbbell, label: "Practice Exercises", val: exercises, set: (v: string) => handleFieldChange(setExercises, v), placeholder: "One exercise per line...", color: "#10B981" },
+            { icon: FileText, label: "Treatment Remarks", val: remarks, set: (v: string) => handleFieldChange(setRemarks, v), placeholder: "Clinical notes...", color: "var(--color-gold)" },
           ].map((field) => (
             <div key={field.label}>
               <div className="flex items-center gap-2 mb-2">

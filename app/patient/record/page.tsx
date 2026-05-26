@@ -79,7 +79,7 @@ export default function RecordPage() {
         setBars(Array.from({ length: 40 }, () => Math.random() * 44 + 4));
       }, 80);
     } catch {
-      setErrorMsg("Microphone access denied. Please allow microphone permission and try again.");
+      setErrorMsg("mic_denied");
       setStage("error");
     }
   }
@@ -321,10 +321,17 @@ export default function RecordPage() {
               aria-hidden="true"
             >
               {bars.map((h, i) => (
-                <motion.div key={i} animate={{ height: h }}
+                <motion.div
+                  key={i}
+                  animate={{ scaleY: h / 48 }}
                   transition={{ duration: 0.08, ease: "easeOut" }}
                   className="w-1 rounded-full"
-                  style={{ background: "linear-gradient(to top, #1B2B5E, #C9A961)", minHeight: 4, opacity: 0.6 + (i % 5) * 0.08 }}
+                  style={{
+                    height: 48,
+                    transformOrigin: "center",
+                    background: "linear-gradient(to top, #1B2B5E, #C9A961)",
+                    opacity: 0.6 + (i % 5) * 0.08,
+                  }}
                 />
               ))}
             </div>
@@ -470,21 +477,52 @@ export default function RecordPage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="text-center w-full"
+            className="text-center w-full max-w-sm mx-auto"
           >
             <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
               style={{ background: "#FEF2F2" }}>
-              <AlertCircle className="w-10 h-10 text-red-500" />
+              <AlertCircle className="w-10 h-10 text-red-500" aria-hidden="true" />
             </div>
-            <h2 className="text-xl font-black tracking-tight mb-2"
-              style={{ color: "var(--color-navy)", fontFamily: "var(--font-display)" }}>
-              Something went wrong
-            </h2>
-            <p className="text-sm text-[#64748B] mb-8 max-w-sm mx-auto">{errorMsg}</p>
+
+            {errorMsg === "mic_denied" ? (
+              <>
+                <h2 className="text-xl font-black tracking-tight mb-2"
+                  style={{ color: "var(--color-navy)", fontFamily: "var(--font-display)" }}>
+                  Microphone access needed
+                </h2>
+                <p className="text-sm text-[#64748B] mb-4 leading-relaxed">
+                  Your browser blocked microphone access. To fix this:
+                </p>
+                <ol className="text-sm text-[#374151] text-left space-y-2 mb-6 bg-[#F8FAFF] rounded-xl p-4 border"
+                  style={{ borderColor: "var(--color-border)" }}>
+                  <li className="flex items-start gap-2">
+                    <span className="font-bold text-[var(--color-navy)] shrink-0">1.</span>
+                    <span>Click the <strong>lock icon</strong> or <strong>camera icon</strong> in your browser address bar</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="font-bold text-[var(--color-navy)] shrink-0">2.</span>
+                    <span>Find <strong>Microphone</strong> and set it to <strong>Allow</strong></span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="font-bold text-[var(--color-navy)] shrink-0">3.</span>
+                    <span>Reload this page and try again</span>
+                  </li>
+                </ol>
+              </>
+            ) : (
+              <>
+                <h2 className="text-xl font-black tracking-tight mb-2"
+                  style={{ color: "var(--color-navy)", fontFamily: "var(--font-display)" }}>
+                  Something went wrong
+                </h2>
+                <p className="text-sm text-[#64748B] mb-8 leading-relaxed">{errorMsg}</p>
+              </>
+            )}
+
             <button onClick={reset}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white"
               style={{ background: "var(--color-navy)" }}>
-              <RotateCcw className="w-4 h-4" />
+              <RotateCcw className="w-4 h-4" aria-hidden="true" />
               Try again
             </button>
           </motion.div>

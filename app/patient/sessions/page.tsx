@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, TrendingUp, Mic, ChevronRight, X } from "lucide-react";
+import { Play, TrendingUp, Mic, ChevronRight, X, Sparkles } from "lucide-react";
 import { FluencyGauge } from "@/components/fluency-gauge";
 import { MOCK_SESSIONS } from "@/lib/mock-data";
 
@@ -26,129 +27,203 @@ const DISF_COLORS: Record<string, string> = {
   false_start: "#EC4899", phrase_rep: "#F97316", unknown: "#D1D5DB",
 };
 
+const DISF_LABELS: Record<string, string> = {
+  block: "Block", word_rep: "Word Rep", sound_rep: "Sound Rep",
+  prolongation: "Prolongation", interjection: "Interjection", pause: "Pause",
+  repetition: "Repetition", filler: "Filler", revision: "Revision",
+  false_start: "False Start", phrase_rep: "Phrase Rep", unknown: "Other",
+};
+
 function pauseCount(p: number | unknown[]): number {
   return Array.isArray(p) ? p.length : (p as number);
 }
 
+function sevColor(s: string) {
+  return s === "mild" ? "#10B981" : s === "moderate" ? "#F59E0B" : "#EF4444";
+}
+
+const mockAsStored: StoredSession[] = MOCK_SESSIONS
+  .filter((s) => s.patientId === "p1")
+  .map((s) => ({
+    id: parseInt(s.id.replace(/\D/g, ""), 10) || 0,
+    date: s.date,
+    report: {
+      fluency_score: s.fluencyScore,
+      severity: s.severity as "mild" | "moderate" | "severe",
+      speech_rate: s.speechRate,
+      transcript: s.transcript,
+      disfluencies: s.disfluencies,
+      pauses: s.pauses,
+    },
+  }));
+
 export default function SessionsPage() {
   const [realSessions, setRealSessions] = useState<StoredSession[]>([]);
+  const [hydrated, setHydrated] = useState(false);
   const [selected, setSelected] = useState<StoredSession | null>(null);
 
   useEffect(() => {
-    const raw = localStorage.getItem("fv_sessions");
-    if (raw) setRealSessions(JSON.parse(raw));
+    try {
+      const raw = localStorage.getItem("fv_sessions");
+      if (raw) setRealSessions(JSON.parse(raw));
+    } catch { /* ignore */ }
+    setHydrated(true);
   }, []);
 
-  // Merge real + mock (real first)
-  const mockAsStored: StoredSession[] = MOCK_SESSIONS
-    .filter((s) => s.patientId === "p1")
-    .map((s) => ({
-      id: parseInt(s.id.replace(/\D/g, ""), 10) || 0,
-      date: s.date,
-      report: {
-        fluency_score: s.fluencyScore,
-        severity: s.severity as "mild" | "moderate" | "severe",
-        speech_rate: s.speechRate,
-        transcript: s.transcript,
-        disfluencies: s.disfluencies,
-        pauses: s.pauses,
-      },
-    }));
+  // Escape key closes drawer
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === "Escape") setSelected(null);
+  }, []);
+  useEffect(() => {
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
 
-  const allSessions = [...realSessions, ...mockAsStored];
+  const hasReal = realSessions.length > 0;
 
-  const sevColor = (s: string) =>
-    s === "mild" ? "#10B981" : s === "moderate" ? "#F59E0B" : "#EF4444";
+  // When real sessions exist, show only those. Otherwise show mock as sample data.
+  const displaySessions = hasReal ? realSessions : (hydrated ? mockAsStored : []);
+  const isSampleData = !hasReal && hydrated;
+
+  const avgScore = displaySessions.length > 0
+    ? Math.round(displaySessions.reduce((s, r) => s + r.report.fluency_score, 0) / displaySessions.length)
+    : null;
 
   return (
     <div className="max-w-3xl mx-auto space-y-5">
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black tracking-tight"
-            style={{ color: "var(--color-navy)", fontFamily: "var(--font-display)" }}>
+          <h1
+            className="text-2xl font-black tracking-tight"
+            style={{ color: "var(--color-navy)", fontFamily: "var(--font-display)" }}
+          >
             My Sessions
           </h1>
-          <p className="text-sm text-[#9CA3AF] mt-0.5">{allSessions.length} recordings total</p>
+          <p className="text-sm text-[#9CA3AF] mt-0.5">
+            {hasReal
+              ? `${realSessions.length} recording${realSessions.length > 1 ? "s" : ""}`
+              : "No recordings yet"}
+          </p>
         </div>
-        <a href="/patient/record"
+        <Link
+          href="/patient/record"
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white"
-          style={{ background: "var(--color-navy)" }}>
-          <Mic className="w-4 h-4" />
+          style={{ background: "var(--color-navy)" }}
+        >
+          <Mic className="w-4 h-4" aria-hidden="true" />
           New recording
-        </a>
+        </Link>
       </div>
+
+      {/* Sample data notice */}
+      {hydrated && isSampleData && (
+        <motion.div
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium"
+          style={{ background: "var(--color-gold-dim)", border: "1px solid rgba(201,169,97,0.25)", color: "#92680a" }}
+        >
+          <Sparkles className="w-4 h-4 shrink-0" aria-hidden="true" />
+          Showing sample sessions — record your voice to see your own history here.
+        </motion.div>
+      )}
+
+      {/* Empty state */}
+      {hydrated && displaySessions.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
+            style={{ background: "var(--color-navy-dim)" }}
+          >
+            <Mic className="w-7 h-7" style={{ color: "var(--color-navy)" }} aria-hidden="true" />
+          </div>
+          <p className="font-bold text-[var(--color-navy)]">No sessions yet</p>
+          <p className="text-sm text-[#9CA3AF] mt-1 mb-5">Record your first sample to get started.</p>
+          <Link
+            href="/patient/record"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white"
+            style={{ background: "var(--color-navy)" }}
+          >
+            <Mic className="w-4 h-4" aria-hidden="true" />
+            Start recording
+          </Link>
+        </div>
+      )}
 
       {/* Session list */}
-      <div className="space-y-3">
-        {allSessions.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="text-4xl mb-4">🎙️</div>
-            <p className="font-bold text-[var(--color-navy)]">No sessions yet</p>
-            <p className="text-sm text-[#9CA3AF] mt-1">Record your first sample to get started.</p>
-          </div>
-        )}
-        {allSessions.map((sess, i) => {
-          const sev = sess.report.severity;
-          const color = sevColor(sev);
-          return (
-            <motion.div
-              key={sess.id}
-              initial={{ opacity: 0, x: -12 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.05 }}
-              whileHover={{ x: 3 }}
-            >
-              <button
-                onClick={() => setSelected(sess)}
-                className="w-full flex items-center gap-4 p-4 rounded-2xl border text-left transition-all hover:shadow-md"
-                style={{ background: "white", borderColor: "var(--color-border)", boxShadow: "var(--shadow-sm)" }}
+      {displaySessions.length > 0 && (
+        <div className="space-y-2.5">
+          {displaySessions.map((sess, i) => {
+            const sev = sess.report.severity;
+            const color = sevColor(sev);
+            return (
+              <motion.div
+                key={sess.id}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.04 }}
+                whileHover={{ x: 2 }}
               >
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: `${color}14` }}>
-                  <Play className="w-4 h-4" style={{ color }} />
-                </div>
-                <div className="flex-1 min-w-0 text-left">
-                  <div className="text-sm font-semibold truncate" style={{ color: "var(--color-navy)" }}>
-                    {sess.date}
+                <button
+                  onClick={() => setSelected(sess)}
+                  aria-label={`View session from ${sess.date}, fluency score ${sess.report.fluency_score}`}
+                  className="w-full flex items-center gap-4 p-4 rounded-2xl border text-left transition-all hover:shadow-md"
+                  style={{ background: "white", borderColor: "var(--color-border)", boxShadow: "var(--shadow-sm)" }}
+                >
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: `${color}14` }}
+                  >
+                    <Play className="w-4 h-4" style={{ color }} aria-hidden="true" />
                   </div>
-                  <div className="text-xs text-[#9CA3AF] mt-0.5">
-                    {sess.report.disfluencies.length} disfluency events
-                    {sess.report.speech_rate < 300 && ` · ${Math.round(sess.report.speech_rate)} wpm`}
+                  <div className="flex-1 min-w-0 text-left">
+                    <div className="text-sm font-semibold truncate" style={{ color: "var(--color-navy)" }}>
+                      {sess.date}
+                    </div>
+                    <div className="text-xs text-[#9CA3AF] mt-0.5">
+                      {sess.report.disfluencies.length} disfluency event{sess.report.disfluencies.length !== 1 ? "s" : ""}
+                      {sess.report.speech_rate < 300 && ` · ${Math.round(sess.report.speech_rate)} wpm`}
+                    </div>
                   </div>
-                </div>
-                <div className="text-right shrink-0 mr-2">
-                  <div className="text-xl font-black tabnum" style={{ color: "var(--color-navy)" }}>
-                    {sess.report.fluency_score}
+                  <div className="text-right shrink-0 mr-1">
+                    <div className="text-xl font-black tabnum" style={{ color: "var(--color-navy)" }}>
+                      {sess.report.fluency_score}
+                    </div>
+                    <div className="text-[10px] font-bold capitalize" style={{ color }}>
+                      {sev}
+                    </div>
                   </div>
-                  <div className="text-[10px] font-bold capitalize" style={{ color }}>
-                    {sev}
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-[#9CA3AF] shrink-0" />
-              </button>
-            </motion.div>
-          );
-        })}
-      </div>
+                  <ChevronRight className="w-4 h-4 text-[#9CA3AF] shrink-0" aria-hidden="true" />
+                </button>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
 
-      {/* Avg trend */}
-      {allSessions.length > 1 && (
-        <div className="flex items-center gap-2 px-4 py-3 rounded-xl"
-          style={{ background: "var(--color-navy-dim)" }}>
-          <TrendingUp className="w-4 h-4 shrink-0" style={{ color: "var(--color-navy)" }} />
+      {/* Average score strip */}
+      {avgScore !== null && displaySessions.length > 1 && (
+        <div
+          className="flex items-center gap-2 px-4 py-3 rounded-xl"
+          style={{ background: "var(--color-navy-dim)" }}
+        >
+          <TrendingUp className="w-4 h-4 shrink-0" style={{ color: "var(--color-navy)" }} aria-hidden="true" />
           <p className="text-sm font-medium" style={{ color: "var(--color-navy)" }}>
             Average fluency score:{" "}
-            <strong>{Math.round(allSessions.reduce((s, r) => s + r.report.fluency_score, 0) / allSessions.length)}</strong>
-            {" "}across {allSessions.length} sessions
+            <strong>{avgScore}</strong>
+            {" "}across {displaySessions.length} session{displaySessions.length !== 1 ? "s" : ""}
+            {isSampleData && <span className="opacity-60"> (sample data)</span>}
           </p>
         </div>
       )}
 
-      {/* Detail drawer */}
+      {/* Session detail drawer */}
       <AnimatePresence>
         {selected && (
           <>
+            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -156,8 +231,13 @@ export default function SessionsPage() {
               className="fixed inset-0 z-40"
               style={{ background: "rgba(27,43,94,0.3)" }}
               onClick={() => setSelected(null)}
+              aria-hidden="true"
             />
+            {/* Drawer */}
             <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-label={`Session detail: ${selected.date}`}
               initial={{ opacity: 0, x: "100%" }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: "100%" }}
@@ -166,22 +246,30 @@ export default function SessionsPage() {
               style={{ background: "var(--color-bg)" }}
             >
               <div className="p-6 space-y-4">
-                {/* Close */}
-                <div className="flex items-center justify-between mb-2">
+
+                {/* Drawer header */}
+                <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-[#9CA3AF] font-medium">Session</p>
-                    <p className="text-sm font-semibold" style={{ color: "var(--color-navy)" }}>{selected.date}</p>
+                    <p className="text-sm font-semibold" style={{ color: "var(--color-navy)" }}>
+                      {selected.date}
+                    </p>
                   </div>
-                  <button onClick={() => setSelected(null)}
+                  <button
+                    onClick={() => setSelected(null)}
+                    aria-label="Close session detail"
                     className="w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:bg-white"
-                    style={{ border: "1.5px solid var(--color-border)" }}>
-                    <X className="w-4 h-4 text-[#9CA3AF]" />
+                    style={{ border: "1.5px solid var(--color-border)" }}
+                  >
+                    <X className="w-4 h-4 text-[#9CA3AF]" aria-hidden="true" />
                   </button>
                 </div>
 
                 {/* Gauge + metrics */}
-                <div className="p-5 rounded-2xl border"
-                  style={{ background: "white", borderColor: "var(--color-border)" }}>
+                <div
+                  className="p-5 rounded-2xl border"
+                  style={{ background: "white", borderColor: "var(--color-border)" }}
+                >
                   <div className="flex justify-center mb-4">
                     <FluencyGauge score={selected.report.fluency_score} size={130} />
                   </div>
@@ -192,11 +280,17 @@ export default function SessionsPage() {
                       { label: "Pauses", val: pauseCount(selected.report.pauses), unit: "total", color: "#EC4899" },
                       { label: "Severity", val: selected.report.severity, unit: "", color: sevColor(selected.report.severity) },
                     ].map((m) => (
-                      <div key={m.label} className="p-3 rounded-xl border text-center"
-                        style={{ borderColor: "var(--color-border)" }}>
+                      <div
+                        key={m.label}
+                        className="p-3 rounded-xl border text-center"
+                        style={{ borderColor: "var(--color-border)" }}
+                        aria-label={`${m.label}: ${m.val}${m.unit ? " " + m.unit : ""}`}
+                      >
                         <div className="text-lg font-black capitalize" style={{ color: m.color }}>{m.val}</div>
                         <div className="text-[10px] text-[#9CA3AF]">{m.unit}</div>
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF] mt-1 pt-1 border-t border-[#F3F4F6]">{m.label}</div>
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF] mt-1 pt-1 border-t border-[#F3F4F6]">
+                          {m.label}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -204,35 +298,62 @@ export default function SessionsPage() {
 
                 {/* Transcript */}
                 {selected.report.transcript && (
-                  <div className="p-4 rounded-2xl border"
-                    style={{ background: "white", borderColor: "var(--color-border)" }}>
+                  <div
+                    className="p-4 rounded-2xl border"
+                    style={{ background: "white", borderColor: "var(--color-border)" }}
+                  >
                     <div className="text-xs font-bold uppercase tracking-widest text-[#9CA3AF] mb-2">Transcript</div>
                     <p className="text-sm text-[#374151] leading-relaxed">{selected.report.transcript}</p>
                   </div>
                 )}
 
-                {/* Disfluencies */}
+                {/* Disfluency events */}
                 {selected.report.disfluencies.length > 0 && (
-                  <div className="p-4 rounded-2xl border"
-                    style={{ background: "white", borderColor: "var(--color-border)" }}>
-                    <div className="text-xs font-bold uppercase tracking-widest text-[#9CA3AF] mb-3">Disfluency Events</div>
+                  <div
+                    className="p-4 rounded-2xl border"
+                    style={{ background: "white", borderColor: "var(--color-border)" }}
+                  >
+                    <div className="text-xs font-bold uppercase tracking-widest text-[#9CA3AF] mb-3">
+                      Disfluency Events
+                    </div>
                     <div className="flex flex-wrap gap-2">
                       {selected.report.disfluencies.map((ev, i) => {
                         const evType = ev.event ?? "unknown";
                         const color = DISF_COLORS[evType] ?? "#9CA3AF";
+                        const label = DISF_LABELS[evType] ?? evType.replace("_", " ");
                         return (
-                          <div key={i}
+                          <div
+                            key={i}
                             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-semibold"
-                            style={{ background: `${color}14`, color, border: `1px solid ${color}28` }}>
-                            <span className="capitalize">{evType.replace("_", " ")}</span>
+                            style={{ background: `${color}14`, color, border: `1px solid ${color}28` }}
+                          >
+                            <span>{label}</span>
                             {ev.word && <span className="opacity-60">&quot;{ev.word}&quot;</span>}
                             <span className="opacity-50">@{ev.time ?? "–"}</span>
+                            {ev.duration && (
+                              <span
+                                className="px-1 py-0.5 rounded-full text-[10px] font-bold"
+                                style={{ background: `${color}20` }}
+                              >
+                                {ev.duration}s
+                              </span>
+                            )}
                           </div>
                         );
                       })}
                     </div>
                   </div>
                 )}
+
+                {/* Record again CTA */}
+                <Link
+                  href="/patient/record"
+                  className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90"
+                  style={{ background: "var(--color-navy)" }}
+                >
+                  <Mic className="w-4 h-4" aria-hidden="true" />
+                  Record new session
+                </Link>
               </div>
             </motion.div>
           </>
