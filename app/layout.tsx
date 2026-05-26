@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, DM_Serif_Display } from "next/font/google";
+import { Inter, Libre_Baskerville } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -9,9 +9,11 @@ const inter = Inter({
   display: "swap",
 });
 
-const dmSerif = DM_Serif_Display({
+// Libre Baskerville: same warm serif authority as DM Serif Display,
+// but ships 400 + 700 — so font-bold/font-black headings actually render bold.
+const libreBaskerville = Libre_Baskerville({
   subsets: ["latin"],
-  weight: "400",
+  weight: ["400", "700"],
   variable: "--font-display",
   display: "swap",
 });
@@ -26,7 +28,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${dmSerif.variable} h-full antialiased`}>
+    <html lang="en" className={`${inter.variable} ${libreBaskerville.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         {children}
         <Toaster richColors position="top-right" />

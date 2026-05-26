@@ -338,7 +338,7 @@ export default function PatientDashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.18 }}
           className="p-6 rounded-2xl border"
-          style={{ background: "white", borderColor: "var(--color-border)", boxShadow: "0 2px 10px rgba(27,43,94,0.06)" }}
+          style={{ background: "white", borderColor: "var(--color-border)", boxShadow: "var(--shadow-sm)" }}
         >
           <h3 className="font-bold text-[var(--color-navy)] text-sm mb-0.5">Disfluency Breakdown</h3>
           <p className="text-xs text-[#9CA3AF] mb-5">
@@ -372,7 +372,7 @@ export default function PatientDashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.22 }}
           className="p-6 rounded-2xl border"
-          style={{ background: "white", borderColor: "var(--color-border)", boxShadow: "0 2px 10px rgba(27,43,94,0.06)" }}
+          style={{ background: "white", borderColor: "var(--color-border)", boxShadow: "var(--shadow-sm)" }}
         >
           <div className="flex items-center justify-between mb-5">
             <div>
@@ -425,7 +425,7 @@ export default function PatientDashboard() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.28 }}
         className="p-6 rounded-2xl border"
-        style={{ background: "white", borderColor: "var(--color-border)", boxShadow: "0 2px 10px rgba(27,43,94,0.06)" }}
+        style={{ background: "white", borderColor: "var(--color-border)", boxShadow: "var(--shadow-sm)" }}
       >
         <div className="flex items-center justify-between mb-4">
           <div>

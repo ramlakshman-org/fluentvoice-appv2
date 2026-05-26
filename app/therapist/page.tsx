@@ -81,7 +81,7 @@ export default function TherapistDashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.06 }}
             className="p-5 rounded-2xl border"
-            style={{ background: "white", borderColor: "var(--color-border)", boxShadow: "0 2px 10px rgba(27,43,94,0.06)" }}
+            style={{ background: "white", borderColor: "var(--color-border)", boxShadow: "var(--shadow-sm)" }}
           >
             <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ background: s.bg }}>
               <s.icon className="w-5 h-5" style={{ color: s.color }} />
@@ -124,7 +124,7 @@ export default function TherapistDashboard() {
                 <Link href={`/therapist/patients/${patient.id}`}>
                   <div
                     className="flex items-center gap-4 p-5 rounded-2xl border transition-all hover:shadow-md cursor-pointer"
-                    style={{ background: "white", borderColor: "var(--color-border)", boxShadow: "0 2px 8px rgba(27,43,94,0.05)" }}
+                    style={{ background: "white", borderColor: "var(--color-border)", boxShadow: "var(--shadow-sm)" }}
                   >
                     {/* Avatar */}
                     <div
@@ -184,7 +184,7 @@ export default function TherapistDashboard() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
         className="p-6 rounded-2xl border"
-        style={{ background: "white", borderColor: "var(--color-border)", boxShadow: "0 2px 10px rgba(27,43,94,0.06)" }}
+        style={{ background: "white", borderColor: "var(--color-border)", boxShadow: "var(--shadow-sm)" }}
       >
         <h3 className="font-bold text-[var(--color-navy)] text-sm mb-5">Upcoming Appointments</h3>
         <div className="space-y-3">

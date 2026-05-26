@@ -16,11 +16,11 @@
   --color-gold-dim:    rgba(201,168,76,0.12);
 
   /* Surfaces */
-  --color-bg:          #F0F4FF;
+  --color-bg:          #E9EFF9;
   --color-surface:     #FFFFFF;
-  --color-surface-2:   #FAFBFF;
-  --color-border:      #DDE3F0;
-  --color-muted:       #E8EDF5;
+  --color-surface-2:   #F6F9FF;
+  --color-border:      #C8D3E8;
+  --color-muted:       #DAE3F2;
 
   /* Text */
   --color-text:        #0F172A;
@@ -37,11 +37,11 @@
   --color-pink:        #EC4899;
   --color-orange:      #F97316;
 
-  /* Shadows */
-  --shadow-sm:  0 2px 8px  rgba(27,43,94,0.05);
-  --shadow-md:  0 4px 20px rgba(27,43,94,0.08);
-  --shadow-lg:  0 12px 40px rgba(27,43,94,0.14);
-  --shadow-xl:  0 24px 60px rgba(27,43,94,0.22);
+  /* Shadows — hairline ring + minimal blur for crisp, defined edges */
+  --shadow-sm:  0 0 0 1px rgba(27,43,94,0.08), 0 1px 4px  rgba(27,43,94,0.08);
+  --shadow-md:  0 0 0 1px rgba(27,43,94,0.09), 0 4px 16px rgba(27,43,94,0.10);
+  --shadow-lg:  0 0 0 1px rgba(27,43,94,0.10), 0 10px 32px rgba(27,43,94,0.16);
+  --shadow-xl:  0 0 0 1px rgba(27,43,94,0.12), 0 20px 52px rgba(27,43,94,0.22);
 
   /* shadcn compat */
   --background:         var(--color-bg);
@@ -101,10 +101,17 @@
     color: var(--color-text);
     font-family: var(--font-body), -apple-system, BlinkMacSystemFont, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   h1, h2, h3 {
     font-family: var(--font-display), var(--font-body), sans-serif;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "kern" 1, "liga" 1;
   }
+  h1 { letter-spacing: -0.025em; }
+  h2 { letter-spacing: -0.018em; }
+  h3 { letter-spacing: -0.012em; }
 }
 
 /* Tabular nums on all metric displays */
