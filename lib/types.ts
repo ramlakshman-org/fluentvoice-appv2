@@ -32,8 +32,9 @@ export interface DbSession {
 
 export interface DbTreatmentPlan {
   _id?: ObjectId;
-  patientId: ObjectId;
-  therapistId?: ObjectId;
+  /** Stored as a plain string so mock IDs like "p1" work alongside real ObjectId strings */
+  patientId: string;
+  therapistId?: string;
   goals: string[];
   exercises: string[];
   remarks: string;

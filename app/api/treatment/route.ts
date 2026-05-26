@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ObjectId } from "mongodb";
 import { getAuthUser } from "@/lib/auth";
 import { getDb } from "@/lib/mongodb";
 import type { DbTreatmentPlan } from "@/lib/types";
@@ -8,6 +7,7 @@ import type { DbTreatmentPlan } from "@/lib/types";
  * GET /api/treatment?patientId=xxx
  * Returns the treatment plan for a patient.
  * Accessible by the patient themselves OR their therapist.
+ * patientId is stored as a plain string (not ObjectId) so mock IDs like "p1" work.
  */
 export async function GET(req: NextRequest) {
   try {
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     const db = await getDb();
     const plans = db.collection<DbTreatmentPlan>("treatment_plans");
 
-    const plan = await plans.findOne({ patientId: new ObjectId(patientId) });
+    const plan = await plans.findOne({ patientId });
     if (!plan) {
       return NextResponse.json({ plan: null });
     }
@@ -28,8 +28,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       plan: {
         id: plan._id!.toString(),
-        patientId: plan.patientId.toString(),
-        therapistId: plan.therapistId?.toString(),
+        patientId: plan.patientId,
+        therapistId: plan.therapistId,
         goals: plan.goals,
         exercises: plan.exercises,
         remarks: plan.remarks,
@@ -54,7 +54,7 @@ export async function PUT(req: NextRequest) {
     if (!jwt) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
-    const patientId = body.patientId ?? jwt.sub;
+    const patientId: string = body.patientId ?? jwt.sub;
     const { goals, exercises, remarks } = body;
 
     const db = await getDb();
@@ -68,14 +68,14 @@ export async function PUT(req: NextRequest) {
     };
 
     if (jwt.role === "therapist") {
-      setFields.therapistId = new ObjectId(jwt.sub);
+      setFields.therapistId = jwt.sub;
     }
 
     await plans.updateOne(
-      { patientId: new ObjectId(patientId) },
+      { patientId },
       {
         $set: setFields,
-        $setOnInsert: { patientId: new ObjectId(patientId) },
+        $setOnInsert: { patientId },
       },
       { upsert: true }
     );
