@@ -1,11 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Mic, Menu } from "lucide-react";
 import { Sidebar } from "@/components/sidebar";
 
 export default function TherapistLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [displayName, setDisplayName] = useState("Dr. Meera Iyer");
+
+  useEffect(() => {
+    try {
+      const user = localStorage.getItem("fv_user");
+      if (user) {
+        const parsed = JSON.parse(user);
+        if (parsed?.name) setDisplayName(parsed.name);
+      }
+    } catch { /* ignore */ }
+  }, []);
 
   return (
     <div className="flex min-h-screen" style={{ background: "var(--color-bg)" }}>
@@ -35,7 +46,7 @@ export default function TherapistLayout({ children }: { children: React.ReactNod
 
       <Sidebar
         role="therapist"
-        userName="Dr. Meera Iyer"
+        userName={displayName}
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
       />

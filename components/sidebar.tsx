@@ -73,7 +73,8 @@ export function Sidebar({ role, userName, mobileOpen = false, onMobileClose }: S
       {/* Mobile backdrop */}
       {mobileOpen && (
         <div
-          className="lg:hidden fixed inset-0 z-40 bg-black/50"
+          className="lg:hidden fixed inset-0 z-40"
+          style={{ background: "rgba(27,43,94,0.5)" }}
           onClick={onMobileClose}
         />
       )}

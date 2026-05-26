@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Target, Dumbbell, FileText, CheckCircle2 } from "lucide-react";
 
@@ -21,12 +21,36 @@ const DEFAULT_EXERCISES = [
 const DEFAULT_REMARKS =
   "Patient is showing consistent improvement over the last 3 sessions. Focus on maintaining gains during conversational speech. Recommend increasing practice to 3x per week.";
 
+const STORAGE_KEY = "fv_treatment_checked";
+
 export default function TreatmentPage() {
   const [checked, setChecked] = useState<Record<number, boolean>>({});
+  const [therapistName, setTherapistName] = useState("Dr. Meera Iyer");
+
+  // Load persisted state on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) setChecked(JSON.parse(raw));
+      // If patient has a linked therapist name stored, use it
+      const user = localStorage.getItem("fv_user");
+      if (user) {
+        const parsed = JSON.parse(user);
+        if (parsed?.therapistName) setTherapistName(parsed.therapistName);
+      }
+    } catch { /* ignore */ }
+  }, []);
 
   function toggle(i: number) {
-    setChecked((prev) => ({ ...prev, [i]: !prev[i] }));
+    setChecked((prev) => {
+      const next = { ...prev, [i]: !prev[i] };
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
   }
+
+  const total = DEFAULT_GOALS.length + DEFAULT_EXERCISES.length;
+  const doneCount = Object.values(checked).filter(Boolean).length;
 
   return (
     <div className="max-w-3xl mx-auto space-y-5">
@@ -38,13 +62,29 @@ export default function TreatmentPage() {
         style={{ background: "var(--color-navy)", boxShadow: "var(--shadow-lg)" }}
       >
         <p className="text-white/50 text-xs font-medium uppercase tracking-widest mb-1">Your treatment plan</p>
-        <h1 className="text-2xl font-black text-white tracking-tight"
-          style={{ fontFamily: "var(--font-display)" }}>
+        <h1 className="text-2xl font-black text-white tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
           Practice & Goals
         </h1>
         <p className="text-white/60 text-sm mt-1">
-          Updated by Dr. Meera Iyer · Follow these exercises daily for best results.
+          Updated by {therapistName} · Follow these exercises daily for best results.
         </p>
+        {doneCount > 0 && (
+          <div className="mt-4">
+            <div className="flex items-center justify-between text-xs mb-1.5">
+              <span className="text-white/50 font-medium">Today&apos;s progress</span>
+              <span className="text-white/80 font-bold">{doneCount} / {total} done</span>
+            </div>
+            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.12)" }}>
+              <motion.div
+                className="h-full rounded-full"
+                style={{ background: "var(--color-gold)" }}
+                initial={{ width: 0 }}
+                animate={{ width: `${(doneCount / total) * 100}%` }}
+                transition={{ duration: 0.4 }}
+              />
+            </div>
+          </div>
+        )}
       </motion.div>
 
       {/* Goals */}
@@ -61,9 +101,20 @@ export default function TreatmentPage() {
         </div>
         <div className="space-y-2.5">
           {DEFAULT_GOALS.map((goal, i) => (
-            <div key={i} className="flex items-start gap-3 p-3 rounded-xl transition-all"
-              style={{ background: checked[i] ? "rgba(16,185,129,0.06)" : "#FAFBFF", border: `1px solid ${checked[i] ? "rgba(16,185,129,0.2)" : "var(--color-border)"}` }}>
-              <button onClick={() => toggle(i)} className="mt-0.5 shrink-0">
+            <div
+              key={i}
+              className="flex items-start gap-3 p-3 rounded-xl transition-all cursor-pointer"
+              style={{
+                background: checked[i] ? "rgba(16,185,129,0.06)" : "#FAFBFF",
+                border: `1px solid ${checked[i] ? "rgba(16,185,129,0.2)" : "var(--color-border)"}`,
+              }}
+              onClick={() => toggle(i)}
+            >
+              <button
+                className="mt-0.5 shrink-0"
+                aria-label={checked[i] ? `Unmark goal: ${goal}` : `Mark goal as done: ${goal}`}
+                onClick={(e) => { e.stopPropagation(); toggle(i); }}
+              >
                 {checked[i]
                   ? <CheckCircle2 className="w-5 h-5 text-[#10B981]" />
                   : <div className="w-5 h-5 rounded-full border-2 border-[#DDE3F0]" />
@@ -93,12 +144,20 @@ export default function TreatmentPage() {
           {DEFAULT_EXERCISES.map((ex, i) => {
             const idx = i + DEFAULT_GOALS.length;
             return (
-              <div key={i}
+              <div
+                key={i}
                 className="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer"
-                style={{ background: checked[idx] ? "rgba(16,185,129,0.06)" : "#FAFBFF", border: `1px solid ${checked[idx] ? "rgba(16,185,129,0.2)" : "var(--color-border)"}` }}
+                style={{
+                  background: checked[idx] ? "rgba(16,185,129,0.06)" : "#FAFBFF",
+                  border: `1px solid ${checked[idx] ? "rgba(16,185,129,0.2)" : "var(--color-border)"}`,
+                }}
                 onClick={() => toggle(idx)}
               >
-                <button className="shrink-0">
+                <button
+                  className="shrink-0"
+                  aria-label={checked[idx] ? `Unmark exercise: ${ex}` : `Mark exercise as done: ${ex}`}
+                  onClick={(e) => { e.stopPropagation(); toggle(idx); }}
+                >
                   {checked[idx]
                     ? <CheckCircle2 className="w-5 h-5 text-[#10B981]" />
                     : <div className="w-5 h-5 rounded-full border-2 border-[#DDE3F0]" />
@@ -112,13 +171,13 @@ export default function TreatmentPage() {
           })}
         </div>
 
-        {/* Progress */}
-        {Object.values(checked).filter(Boolean).length > 0 && (
+        {/* Progress bar (only in exercises card on mobile where header progress is above fold) */}
+        {doneCount > 0 && (
           <div className="mt-4 pt-4 border-t" style={{ borderColor: "var(--color-border)" }}>
-            <div className="flex items-center justify-between text-xs mb-2">
+            <div className="flex items-center justify-between text-xs mb-1.5">
               <span className="text-[#9CA3AF] font-medium">Today&apos;s progress</span>
               <span className="font-bold" style={{ color: "var(--color-navy)" }}>
-                {Object.values(checked).filter(Boolean).length} / {DEFAULT_GOALS.length + DEFAULT_EXERCISES.length}
+                {doneCount} / {total}
               </span>
             </div>
             <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--color-border)" }}>
@@ -126,7 +185,7 @@ export default function TreatmentPage() {
                 className="h-full rounded-full"
                 style={{ background: "linear-gradient(90deg, #1B2B5E, #C9A961)" }}
                 initial={{ width: 0 }}
-                animate={{ width: `${(Object.values(checked).filter(Boolean).length / (DEFAULT_GOALS.length + DEFAULT_EXERCISES.length)) * 100}%` }}
+                animate={{ width: `${(doneCount / total) * 100}%` }}
                 transition={{ duration: 0.4 }}
               />
             </div>
@@ -147,7 +206,7 @@ export default function TreatmentPage() {
           <span className="text-xs font-bold uppercase tracking-widest text-[#9CA3AF]">Therapist Notes</span>
         </div>
         <p className="text-sm text-[#374151] leading-relaxed">{DEFAULT_REMARKS}</p>
-        <div className="mt-3 text-xs text-[#9CA3AF] font-medium">— Dr. Meera Iyer, SLP</div>
+        <div className="mt-3 text-xs text-[#9CA3AF] font-medium">— {therapistName}, SLP</div>
       </motion.div>
     </div>
   );

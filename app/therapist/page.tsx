@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Users, TrendingUp, TrendingDown, Minus, ArrowRight, Calendar, Check, X } from "lucide-react";
+import { Users, TrendingUp, TrendingDown, Minus, ArrowRight, Calendar, Check, X, Activity } from "lucide-react";
 import { MOCK_PATIENTS, MOCK_SESSIONS } from "@/lib/mock-data";
 
 const TREND_ICON = {
@@ -23,6 +23,17 @@ export default function TherapistDashboard() {
   const totalSessions = MOCK_SESSIONS.length;
   const avgFluency = Math.round(MOCK_PATIENTS.reduce((s, p) => s + p.avgFluency, 0) / MOCK_PATIENTS.length);
   const [apptStatus, setApptStatus] = useState<Record<string, "confirmed" | "cancelled" | null>>({});
+  const [displayName, setDisplayName] = useState("Dr. Meera Iyer");
+
+  useEffect(() => {
+    try {
+      const user = localStorage.getItem("fv_user");
+      if (user) {
+        const parsed = JSON.parse(user);
+        if (parsed?.name) setDisplayName(parsed.name);
+      }
+    } catch { /* ignore */ }
+  }, []);
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -42,7 +53,7 @@ export default function TherapistDashboard() {
         />
         <div className="relative">
           <p className="text-white/50 text-sm font-medium mb-1">Therapist Dashboard</p>
-          <h1 className="text-3xl font-black text-white tracking-tight mb-2" style={{ fontFamily: "var(--font-display)" }}>Dr. Meera Iyer 🩺</h1>
+          <h1 className="text-3xl font-black text-white tracking-tight mb-2" style={{ fontFamily: "var(--font-display)" }}>{displayName} 🩺</h1>
           <p className="text-white/60 text-sm">
             You have <strong className="text-white/80">{MOCK_PATIENTS.length} active patients</strong> and{" "}
             <strong className="text-white/80">{totalSessions} recorded sessions</strong> this month.
@@ -54,7 +65,7 @@ export default function TherapistDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { icon: Users, val: MOCK_PATIENTS.length, label: "Active Patients", color: "var(--color-navy)", bg: "var(--color-navy-dim)" },
-          { icon: TrendingUp, val: totalSessions, label: "Sessions This Month", color: "#6366F1", bg: "rgba(99,102,241,0.08)" },
+          { icon: Activity, val: totalSessions, label: "Sessions This Month", color: "#6366F1", bg: "rgba(99,102,241,0.08)" },
           { icon: TrendingUp, val: avgFluency, label: "Avg Fluency Score", color: "#10B981", bg: "rgba(16,185,129,0.08)" },
           { icon: Calendar, val: 3, label: "Upcoming Appointments", color: "var(--color-gold)", bg: "var(--color-gold-dim)" },
         ].map((s, i) => (

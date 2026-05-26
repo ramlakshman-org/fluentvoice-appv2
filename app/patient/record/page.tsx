@@ -183,7 +183,21 @@ export default function RecordPage() {
       setResult(data as AnalysisResult);
       setStage("results");
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : "Analysis failed");
+      const raw = err instanceof Error ? err.message : "";
+      // Translate technical errors into patient-friendly messages
+      const friendly =
+        raw.includes("fetch") || raw.includes("network") || raw.includes("Network")
+          ? "We couldn't reach the analysis service. Check your internet connection and try again."
+          : raw.includes("500") || raw.includes("502") || raw.includes("503")
+          ? "The analysis service is temporarily unavailable. Please try again in a moment."
+          : raw.includes("timeout") || raw.includes("Timeout")
+          ? "Analysis timed out — the file may be too large. Try a shorter recording and try again."
+          : raw.includes("format") || raw.includes("codec") || raw.includes("audio")
+          ? "We couldn't read this audio file. Please try a different recording or file format."
+          : raw.length > 0 && raw.length < 120 && !raw.match(/[<>{}\[\]\/\\]/)
+          ? raw  // short, non-technical message — show as-is
+          : "Something went wrong during analysis. Please try again.";
+      setErrorMsg(friendly);
       setStage("error");
     }
   }
@@ -478,9 +492,9 @@ export default function RecordPage() {
             <div className="text-center mb-6">
               <h2 className="text-2xl font-black tracking-tight"
                 style={{ color: "var(--color-navy)", fontFamily: "var(--font-display)" }}>
-                Analysis Complete
+                Here&apos;s your report
               </h2>
-              <p className="text-sm text-[#9CA3AF] mt-1">Your fluency report is ready</p>
+              <p className="text-sm text-[#9CA3AF] mt-1">Session saved to your history</p>
             </div>
 
             {/* Gauge + metrics */}
@@ -496,8 +510,12 @@ export default function RecordPage() {
                   { label: "Pauses", val: pauseCount(result.pauses), unit: "total", color: "#EC4899" },
                   { label: "Severity", val: result.severity, unit: "", color: result.severity === "mild" ? "#10B981" : result.severity === "moderate" ? "#F59E0B" : "#EF4444" },
                 ].map((m) => (
-                  <div key={m.label} className="p-3 rounded-xl border text-center"
-                    style={{ borderColor: "var(--color-border)" }}>
+                  <div
+                    key={m.label}
+                    className="p-3 rounded-xl border text-center"
+                    style={{ borderColor: "var(--color-border)" }}
+                    aria-label={`${m.label}: ${m.val}${m.unit ? " " + m.unit : ""}`}
+                  >
                     <div className="text-xl font-black capitalize" style={{ color: m.color }}>{m.val}</div>
                     <div className="text-[10px] text-[#9CA3AF] font-medium">{m.unit}</div>
                     <div className="text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF] mt-1.5 pt-1.5 border-t border-[#F3F4F6]">
@@ -507,6 +525,52 @@ export default function RecordPage() {
                 ))}
               </div>
             </div>
+
+            {/* Warm interpretation */}
+            {(() => {
+              const sev = result.severity;
+              const score = result.fluency_score;
+              const cfg = sev === "mild"
+                ? {
+                    emoji: "🌟",
+                    heading: "Your speech is flowing well",
+                    body: score >= 75
+                      ? "Excellent fluency. Most of your speech is smooth and natural. Keep up the consistent practice to maintain this level."
+                      : "Good fluency overall, with just a few hesitation moments. These small pauses are normal — you're doing really well.",
+                    bg: "rgba(16,185,129,0.06)",
+                    border: "rgba(16,185,129,0.2)",
+                    color: "#059669",
+                  }
+                : sev === "moderate"
+                ? {
+                    emoji: "📈",
+                    heading: "You're making real progress",
+                    body: "Moderate disfluency is extremely common and responds well to practice. Your transcript shows specific moments to work on — share it with your therapist to build a targeted plan.",
+                    bg: "rgba(245,158,11,0.06)",
+                    border: "rgba(245,158,11,0.2)",
+                    color: "#92400e",
+                  }
+                : {
+                    emoji: "💪",
+                    heading: "Every session moves you forward",
+                    body: "This session captured areas to focus on. Scores like this improve steadily with consistent sessions — recording regularly is the most important thing you can do right now.",
+                    bg: "rgba(99,102,241,0.06)",
+                    border: "rgba(99,102,241,0.2)",
+                    color: "#4338CA",
+                  };
+              return (
+                <div
+                  className="p-4 rounded-2xl flex items-start gap-3"
+                  style={{ background: cfg.bg, border: `1px solid ${cfg.border}` }}
+                >
+                  <span className="text-2xl shrink-0 mt-0.5">{cfg.emoji}</span>
+                  <div>
+                    <div className="text-sm font-bold mb-0.5" style={{ color: cfg.color }}>{cfg.heading}</div>
+                    <p className="text-xs leading-relaxed" style={{ color: cfg.color, opacity: 0.85 }}>{cfg.body}</p>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Transcript */}
             {result.transcript && (
@@ -553,7 +617,7 @@ export default function RecordPage() {
               style={{ background: "var(--color-navy-dim)", border: "1px solid rgba(27,43,94,0.1)" }}>
               <TrendingUp className="w-5 h-5 shrink-0" style={{ color: "var(--color-navy)" }} />
               <p className="text-sm" style={{ color: "var(--color-navy)" }}>
-                Session saved to your history. Keep practicing consistently for best results!
+                This session is now in your history. Aim for regular recordings — even short ones help build a picture of your progress.
               </p>
             </div>
 

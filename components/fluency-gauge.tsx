@@ -23,7 +23,13 @@ export function FluencyGauge({ score, size = 180 }: FluencyGaugeProps) {
   return (
     <div className="flex flex-col items-center gap-3">
       <div className="relative" style={{ width: size, height: size }}>
-        <svg width={size} height={size} viewBox="0 0 160 160">
+        <svg
+          width={size}
+          height={size}
+          viewBox="0 0 160 160"
+          role="img"
+          aria-label={`Fluency score ${score} out of 100, rated ${grade}`}
+        >
           {/* Track */}
           <circle
             cx="80" cy="80" r={r}
