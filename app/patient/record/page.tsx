@@ -274,13 +274,14 @@ export default function RecordPage() {
               onClick={startRecording}
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.97 }}
+              aria-label="Start recording"
               className="w-36 h-36 rounded-full flex items-center justify-center mx-auto mb-10"
               style={{
                 background: "linear-gradient(135deg, #1B2B5E, #2D44A0)",
                 boxShadow: "0 20px 60px rgba(27,43,94,0.4)",
               }}
             >
-              <Mic className="w-16 h-16 text-white" />
+              <Mic className="w-16 h-16 text-white" aria-hidden="true" />
             </motion.button>
 
             <p className="text-sm text-[#9CA3AF] mb-8">— or upload a file —</p>
@@ -314,8 +315,11 @@ export default function RecordPage() {
               {formatTime(elapsed)}
             </div>
 
-            <div className="flex items-center justify-center gap-[3px] mx-auto mb-12 px-6 py-6 rounded-2xl"
-              style={{ background: "white", border: "1.5px solid var(--color-border)", boxShadow: "0 4px 20px rgba(27,43,94,0.08)", height: 96 }}>
+            <div
+              className="flex items-center justify-center gap-[3px] mx-auto mb-12 px-6 py-6 rounded-2xl"
+              style={{ background: "white", border: "1.5px solid var(--color-border)", boxShadow: "0 4px 20px rgba(27,43,94,0.08)", height: 96 }}
+              aria-hidden="true"
+            >
               {bars.map((h, i) => (
                 <motion.div key={i} animate={{ height: h }}
                   transition={{ duration: 0.08, ease: "easeOut" }}
@@ -324,6 +328,9 @@ export default function RecordPage() {
                 />
               ))}
             </div>
+
+            {/* Waveform — decorative */}
+            {/* aria-hidden applied inline on bars below */}
 
             {/* Minimum duration progress */}
             {elapsed < MIN_DURATION_SEC && (
@@ -349,9 +356,10 @@ export default function RecordPage() {
               onClick={stopRecording}
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.96 }}
+              aria-label="Stop recording"
               className="w-24 h-24 rounded-full flex items-center justify-center mx-auto"
               style={{ background: "#EF4444", boxShadow: "0 12px 40px rgba(239,68,68,0.4)" }}>
-              <Square className="w-10 h-10 text-white fill-white" />
+              <Square className="w-10 h-10 text-white fill-white" aria-hidden="true" />
             </motion.button>
             <p className="text-xs text-[#9CA3AF] mt-4 font-medium">Tap to stop recording</p>
           </motion.div>
@@ -385,8 +393,11 @@ export default function RecordPage() {
               Ready to send for AI analysis. This takes about 15–30 seconds.
             </p>
 
-            <div className="flex items-center justify-center gap-[3px] mx-auto mb-8 px-6 py-4 rounded-2xl"
-              style={{ background: "white", border: "1.5px solid var(--color-border)", height: 64 }}>
+            <div
+              className="flex items-center justify-center gap-[3px] mx-auto mb-8 px-6 py-4 rounded-2xl"
+              style={{ background: "white", border: "1.5px solid var(--color-border)", height: 64 }}
+              aria-hidden="true"
+            >
               {Array.from({ length: 40 }, (_, i) => (
                 <div key={i} className="w-1 rounded-full"
                   style={{
@@ -410,8 +421,8 @@ export default function RecordPage() {
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.98 }}
                 className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white"
-                style={{ background: "linear-gradient(135deg, #1B2B5E, #2D44A0)", boxShadow: "0 6px 20px rgba(27,43,94,0.35)" }}>
-                <Send className="w-4 h-4" />
+                style={{ background: "var(--color-navy)", boxShadow: "0 6px 20px rgba(27,43,94,0.25)" }}>
+                <Send className="w-4 h-4" aria-hidden="true" />
                 Analyze speech
               </motion.button>
             </div>

@@ -153,7 +153,8 @@ export default function SessionsPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-black/30"
+              className="fixed inset-0 z-40"
+              style={{ background: "rgba(27,43,94,0.3)" }}
               onClick={() => setSelected(null)}
             />
             <motion.div

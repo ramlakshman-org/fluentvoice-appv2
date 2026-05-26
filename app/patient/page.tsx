@@ -197,6 +197,38 @@ export default function PatientDashboard() {
           boxShadow: "0 4px 24px rgba(27,43,94,0.1)",
         }}
       >
+        {/* ── Empty state: no real sessions yet ── */}
+        {hydrated && !hasReal && (
+          <div className="flex flex-col items-center justify-center px-8 py-12 text-center">
+            <div
+              className="w-20 h-20 rounded-full flex items-center justify-center mb-5"
+              style={{ background: "var(--color-navy-dim)" }}
+            >
+              <Mic className="w-9 h-9" style={{ color: "var(--color-navy)" }} aria-hidden="true" />
+            </div>
+            <h2
+              className="text-xl font-black tracking-tight mb-2"
+              style={{ color: "var(--color-navy)", fontFamily: "var(--font-display)" }}
+            >
+              Record your first session
+            </h2>
+            <p className="text-sm text-[#64748B] mb-6 max-w-xs leading-relaxed">
+              Speak for 30 seconds and we&apos;ll show your fluency score, speech rate, and disfluency patterns here.
+            </p>
+            <Link
+              href="/patient/record"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90"
+              style={{ background: "var(--color-navy)" }}
+            >
+              <Mic className="w-4 h-4" aria-hidden="true" />
+              Start recording
+            </Link>
+            <p className="text-xs text-[#9CA3AF] mt-4">Takes about 30 seconds</p>
+          </div>
+        )}
+
+        {/* ── Score + gauge (only when real sessions exist) ── */}
+        {(!hydrated || hasReal) && (
         <div className="grid grid-cols-1 md:grid-cols-[auto_1fr]">
 
           {/* Left: score + gauge */}
@@ -269,6 +301,7 @@ export default function PatientDashboard() {
             </ResponsiveContainer>
           </div>
         </div>
+        )} {/* end hasReal score block */}
 
         {/* Footer: quick utility strip — no cards, just actions */}
         <div
@@ -295,7 +328,8 @@ export default function PatientDashboard() {
         </div>
       </motion.div>
 
-      {/* ── Disfluency breakdown + Recent sessions ────────────────── */}
+      {/* ── Disfluency breakdown + Recent sessions (only after first recording) ── */}
+      {hydrated && hasReal && (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
         {/* Breakdown */}
@@ -382,8 +416,10 @@ export default function PatientDashboard() {
           </div>
         </motion.div>
       </div>
+      )} {/* end hasReal data sections */}
 
-      {/* ── Latest disfluency timeline ────────────────────────────── */}
+      {/* ── Latest disfluency timeline (only with real data) ─────── */}
+      {hydrated && hasReal && (
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -431,6 +467,7 @@ export default function PatientDashboard() {
           </div>
         )}
       </motion.div>
+      )} {/* end hasReal timeline */}
 
     </div>
   );

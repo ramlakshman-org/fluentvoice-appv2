@@ -39,26 +39,32 @@ export default function TherapistDashboard() {
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <motion.div
-        initial={{ opacity: 0, y: -12 }}
+        initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-3xl p-8 relative overflow-hidden"
-        style={{
-          background: "var(--color-navy)",
-          boxShadow: "var(--shadow-lg)",
-        }}
+        className="flex items-start justify-between gap-4 pt-1"
       >
-        <div
-          className="absolute top-0 right-0 w-64 h-64 rounded-full opacity-10 pointer-events-none"
-          style={{ background: "var(--color-gold)", transform: "translate(30%, -30%)" }}
-        />
-        <div className="relative">
-          <p className="text-white/50 text-sm font-medium mb-1">Therapist Dashboard</p>
-          <h1 className="text-3xl font-black text-white tracking-tight mb-2" style={{ fontFamily: "var(--font-display)" }}>{displayName} 🩺</h1>
-          <p className="text-white/60 text-sm">
-            You have <strong className="text-white/80">{MOCK_PATIENTS.length} active patients</strong> and{" "}
-            <strong className="text-white/80">{totalSessions} recorded sessions</strong> this month.
-          </p>
+        <div>
+          <p className="text-xs font-medium text-[#9CA3AF] mb-0.5">Therapist Dashboard</p>
+          <h1
+            className="text-2xl font-black tracking-tight"
+            style={{ color: "var(--color-navy)", fontFamily: "var(--font-display)" }}
+          >
+            {displayName}
+          </h1>
+          <div className="flex items-center gap-3 mt-1.5 text-xs text-[#9CA3AF]">
+            <span><strong className="font-bold" style={{ color: "var(--color-navy)" }}>{MOCK_PATIENTS.length}</strong> active patients</span>
+            <span>·</span>
+            <span><strong className="font-bold" style={{ color: "var(--color-navy)" }}>{totalSessions}</strong> sessions this month</span>
+          </div>
         </div>
+        <Link
+          href="/therapist/patients"
+          className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all hover:opacity-90 mt-1"
+          style={{ background: "var(--color-navy)", color: "white" }}
+        >
+          <Users className="w-4 h-4" aria-hidden="true" />
+          All patients
+        </Link>
       </motion.div>
 
       {/* Summary stats */}
