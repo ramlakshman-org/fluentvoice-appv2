@@ -484,7 +484,7 @@ export default function RecordPage() {
             </div>
 
             {/* Gauge + metrics */}
-            <div className="p-5 rounded-2xl border grid grid-cols-[auto_1fr] gap-5"
+            <div className="p-5 rounded-2xl border grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-5"
               style={{ background: "white", borderColor: "var(--color-border)", boxShadow: "var(--shadow-sm)" }}>
               <div className="flex items-center justify-center px-2">
                 <FluencyGauge score={result.fluency_score} size={140} />

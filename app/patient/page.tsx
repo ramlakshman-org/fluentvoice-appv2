@@ -199,7 +199,7 @@ export default function PatientDashboard() {
       </motion.div>
 
       {/* ── Quick actions ── */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           { icon: Mic,      label: "Record Voice",  sub: "Starts recording session", href: "/patient/record",    color: "#1B2B5E", grad: "135deg, #1B2B5E, #2D44A0" },
           { icon: Upload,   label: "Upload Audio",  sub: "WAV, MP3, or M4A file",   href: "/patient/record",    color: "#6366F1", grad: "135deg, #6366F1, #818CF8" },
@@ -227,7 +227,7 @@ export default function PatientDashboard() {
       </div>
 
       {/* ── Gauge + Trend ── */}
-      <div className="grid grid-cols-[auto_1fr] gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-4">
 
         {/* Gauge — real or mock score */}
         <motion.div
@@ -235,7 +235,7 @@ export default function PatientDashboard() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.15 }}
           className="flex flex-col items-center justify-center p-6 rounded-2xl border"
-          style={{ background: "white", borderColor: "var(--color-border)", boxShadow: "0 2px 10px rgba(27,43,94,0.06)", minWidth: 220 }}
+          style={{ background: "white", borderColor: "var(--color-border)", boxShadow: "0 2px 10px rgba(27,43,94,0.06)" }}
         >
           <FluencyGauge score={latestScore} size={160} />
           <div className="mt-4 text-center">
@@ -294,7 +294,7 @@ export default function PatientDashboard() {
       </div>
 
       {/* ── Disfluency breakdown + Recent sessions ── */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
         {/* Breakdown — real aggregated or mock */}
         <motion.div

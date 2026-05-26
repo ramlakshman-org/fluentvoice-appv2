@@ -111,7 +111,7 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
       </motion.div>
 
       {/* Sessions + report */}
-      <div className="grid grid-cols-[240px_1fr] gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-4">
         {/* Session list */}
         <motion.div
           initial={{ opacity: 0, x: -12 }}
@@ -265,7 +265,7 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
           </motion.button>
         </div>
 
-        <div className="grid grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {[
             { icon: Target, label: "Goals", val: goals, set: setGoals, placeholder: "One goal per line...", color: "#6366F1" },
             { icon: Dumbbell, label: "Practice Exercises", val: exercises, set: setExercises, placeholder: "One exercise per line...", color: "#10B981" },

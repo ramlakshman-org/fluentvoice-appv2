@@ -51,7 +51,7 @@ export default function TherapistDashboard() {
       </motion.div>
 
       {/* Summary stats */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { icon: Users, val: MOCK_PATIENTS.length, label: "Active Patients", color: "var(--color-navy)", bg: "var(--color-navy-dim)" },
           { icon: TrendingUp, val: totalSessions, label: "Sessions This Month", color: "#6366F1", bg: "rgba(99,102,241,0.08)" },
