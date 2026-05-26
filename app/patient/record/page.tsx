@@ -49,6 +49,8 @@ export default function RecordPage() {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
+  const [analyzeSeconds, setAnalyzeSeconds] = useState(0);
+  const analyzeTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const animRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -143,7 +145,7 @@ export default function RecordPage() {
     setElapsed(0);
   }
 
-  // ── Send to API ─────────────────────────────────────────────────────────────
+  // ── Send to HuggingFace directly (bypasses Vercel's 10s function timeout) ───
   async function analyze() {
     if (!audioBlob) return;
 
@@ -155,6 +157,8 @@ export default function RecordPage() {
     }
 
     setStage("analyzing");
+    setAnalyzeSeconds(0);
+    analyzeTimerRef.current = setInterval(() => setAnalyzeSeconds((s) => s + 1), 1000);
 
     try {
       const form = new FormData();
@@ -163,12 +167,53 @@ export default function RecordPage() {
                 : audioBlob.type.includes("mp4") ? "mp4"
                 : "wav";
       form.append("audio", audioBlob, `recording.${ext}`);
+      form.append("condition_on_previous_text", "false");
+      form.append("no_speech_threshold", "0.6");
 
-      const resp = await fetch("/api/analyze", { method: "POST", body: form });
-      const data = await resp.json();
+      // Call HuggingFace directly — CORS is configured for this origin.
+      // This bypasses Vercel's 10-second serverless function limit; the HF
+      // Space can take 30-120s on cold start and the browser will wait.
+      const resp = await fetch("https://ramlakshman-fluentvoice-api.hf.space/analyze", {
+        method: "POST",
+        body: form,
+        signal: AbortSignal.timeout(180_000), // 3 min browser-side timeout
+      });
+      const raw = await resp.json();
 
-      if (!resp.ok || data.error) {
-        throw new Error(data.error ?? `Server error ${resp.status}`);
+      if (!resp.ok || raw.error) {
+        throw new Error(raw.error ?? `Analysis API returned ${resp.status}`);
+      }
+
+      // Normalise — same logic as the server-side route
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const normDisfluencies = (arr: any[]) =>
+        arr.map((ev) => ({
+          event: ev.event ?? ev.type ?? "unknown",
+          word:  ev.word  ?? ev.token ?? undefined,
+          time:  ev.time  ?? ev.start ?? ev.timestamp ?? "0:00",
+          duration: ev.duration ?? undefined,
+        }));
+
+      const score = raw.fluency_score ?? raw.score ?? 0;
+      function scoreSeverity(s: number): "mild" | "moderate" | "severe" {
+        if (s >= 70) return "mild";
+        if (s >= 40) return "moderate";
+        return "severe";
+      }
+
+      const data = {
+        ...raw,
+        fluency_score: score,
+        severity:      scoreSeverity(score),
+        speech_rate:   raw.speech_rate ?? raw.wpm ?? 0,
+        transcript:    raw.transcript ?? raw.text ?? "",
+        disfluencies:  normDisfluencies(raw.disfluencies ?? raw.events ?? []),
+        pauses:        raw.pauses ?? 0,
+        timeline:      raw.timeline ?? [],
+      };
+
+      if (!data.fluency_score && data.fluency_score !== 0) {
+        throw new Error("The analysis returned an unexpected response. Please try again.");
       }
 
       // Save to localStorage (offline fallback)
@@ -195,9 +240,11 @@ export default function RecordPage() {
         }),
       }).catch(() => { /* silently ignore if not authenticated */ });
 
+      if (analyzeTimerRef.current) clearInterval(analyzeTimerRef.current);
       setResult(data as AnalysisResult);
       setStage("results");
     } catch (err) {
+      if (analyzeTimerRef.current) clearInterval(analyzeTimerRef.current);
       const raw = err instanceof Error ? err.message : "";
       // Translate technical errors into patient-friendly messages
       const friendly =
@@ -220,6 +267,7 @@ export default function RecordPage() {
   useEffect(() => () => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (animRef.current) clearInterval(animRef.current);
+    if (analyzeTimerRef.current) clearInterval(analyzeTimerRef.current);
     if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
   }, []);
 
@@ -468,8 +516,17 @@ export default function RecordPage() {
               style={{ color: "var(--color-navy)", fontFamily: "var(--font-display)" }}>
               Analyzing your speech…
             </h2>
-            <p className="text-[#64748B] text-sm mb-2">Running fluency analysis via AI model</p>
-            <p className="text-[#9CA3AF] text-xs">This takes 15–30 seconds. Please wait.</p>
+            {analyzeSeconds < 15 ? (
+              <>
+                <p className="text-[#64748B] text-sm mb-2">Running fluency analysis via AI model</p>
+                <p className="text-[#9CA3AF] text-xs">This takes 15–30 seconds. Please wait.</p>
+              </>
+            ) : (
+              <>
+                <p className="text-[#64748B] text-sm mb-2">Waking up the AI model — almost there…</p>
+                <p className="text-[#9CA3AF] text-xs">The model was sleeping. First request takes up to 60 seconds.</p>
+              </>
+            )}
 
             {/* Pulsing bar */}
             <div className="mt-10 max-w-xs mx-auto">
