@@ -171,7 +171,7 @@ export default function RecordPage() {
         throw new Error(data.error ?? `Server error ${resp.status}`);
       }
 
-      // Save to localStorage so sessions page can pick it up
+      // Save to localStorage (offline fallback)
       const sessions = JSON.parse(localStorage.getItem("fv_sessions") ?? "[]");
       sessions.unshift({
         id: Date.now(),
@@ -179,6 +179,21 @@ export default function RecordPage() {
         report: data,
       });
       localStorage.setItem("fv_sessions", JSON.stringify(sessions.slice(0, 20)));
+
+      // Also persist to the database (fire-and-forget — don't block the UI)
+      fetch("/api/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fluency_score: data.fluency_score,
+          severity: data.severity,
+          speech_rate: data.speech_rate,
+          transcript: data.transcript,
+          disfluencies: data.disfluencies ?? [],
+          pauses: Array.isArray(data.pauses) ? data.pauses.length : (data.pauses ?? 0),
+          timeline: data.timeline ?? [],
+        }),
+      }).catch(() => { /* silently ignore if not authenticated */ });
 
       setResult(data as AnalysisResult);
       setStage("results");

@@ -48,10 +48,26 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
     setHasUnsaved(true);
   }
 
-  function handleSave() {
+  async function handleSave() {
+    // Persist locally as fast fallback
     try {
       localStorage.setItem(storageKey, JSON.stringify({ goals, exercises, remarks, savedAt: new Date().toISOString() }));
     } catch { /* ignore */ }
+
+    // Also sync to the database (patient ID from URL; goals as newline-separated strings)
+    try {
+      await fetch("/api/treatment", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patientId: patient.id,
+          goals: goals.split("\n").filter(Boolean),
+          exercises: exercises.split("\n").filter(Boolean),
+          remarks,
+        }),
+      });
+    } catch { /* silently ignore — localStorage is the fallback */ }
+
     setSaved(true);
     setHasUnsaved(false);
     setTimeout(() => setSaved(false), 2000);

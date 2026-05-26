@@ -23,22 +23,46 @@ const DEFAULT_REMARKS =
 
 const STORAGE_KEY = "fv_treatment_checked";
 
+interface TreatmentPlan {
+  goals: string[];
+  exercises: string[];
+  remarks: string;
+}
+
 export default function TreatmentPage() {
   const [checked, setChecked] = useState<Record<number, boolean>>({});
   const [therapistName, setTherapistName] = useState("Dr. Meera Iyer");
+  const [plan, setPlan] = useState<TreatmentPlan>({
+    goals: DEFAULT_GOALS,
+    exercises: DEFAULT_EXERCISES,
+    remarks: DEFAULT_REMARKS,
+  });
 
-  // Load persisted state on mount
   useEffect(() => {
+    // Restore checked state from localStorage
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) setChecked(JSON.parse(raw));
-      // If patient has a linked therapist name stored, use it
       const user = localStorage.getItem("fv_user");
       if (user) {
         const parsed = JSON.parse(user);
         if (parsed?.therapistName) setTherapistName(parsed.therapistName);
       }
     } catch { /* ignore */ }
+
+    // Load treatment plan from the API (silently falls back to defaults)
+    fetch("/api/treatment")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.plan) {
+          setPlan({
+            goals: data.plan.goals?.length ? data.plan.goals : DEFAULT_GOALS,
+            exercises: data.plan.exercises?.length ? data.plan.exercises : DEFAULT_EXERCISES,
+            remarks: data.plan.remarks ?? DEFAULT_REMARKS,
+          });
+        }
+      })
+      .catch(() => { /* use defaults */ });
   }, []);
 
   function toggle(i: number) {
@@ -49,7 +73,7 @@ export default function TreatmentPage() {
     });
   }
 
-  const total = DEFAULT_GOALS.length + DEFAULT_EXERCISES.length;
+  const total = plan.goals.length + plan.exercises.length;
   const doneCount = Object.values(checked).filter(Boolean).length;
 
   return (
@@ -100,7 +124,7 @@ export default function TreatmentPage() {
           <span className="text-xs font-bold uppercase tracking-widest text-[#9CA3AF]">Goals</span>
         </div>
         <div className="space-y-2.5">
-          {DEFAULT_GOALS.map((goal, i) => (
+          {plan.goals.map((goal, i) => (
             <div
               key={i}
               className="flex items-start gap-3 p-3 rounded-xl transition-all cursor-pointer"
@@ -141,8 +165,8 @@ export default function TreatmentPage() {
           <span className="text-xs font-bold uppercase tracking-widest text-[#9CA3AF]">Daily Exercises</span>
         </div>
         <div className="space-y-2">
-          {DEFAULT_EXERCISES.map((ex, i) => {
-            const idx = i + DEFAULT_GOALS.length;
+          {plan.exercises.map((ex, i) => {
+            const idx = i + plan.goals.length;
             return (
               <div
                 key={i}
@@ -171,7 +195,6 @@ export default function TreatmentPage() {
           })}
         </div>
 
-        {/* Progress bar (only in exercises card on mobile where header progress is above fold) */}
         {doneCount > 0 && (
           <div className="mt-4 pt-4 border-t" style={{ borderColor: "var(--color-border)" }}>
             <div className="flex items-center justify-between text-xs mb-1.5">
@@ -205,7 +228,7 @@ export default function TreatmentPage() {
           <FileText className="w-4 h-4" style={{ color: "var(--color-gold)" }} />
           <span className="text-xs font-bold uppercase tracking-widest text-[#9CA3AF]">Therapist Notes</span>
         </div>
-        <p className="text-sm text-[#374151] leading-relaxed">{DEFAULT_REMARKS}</p>
+        <p className="text-sm text-[#374151] leading-relaxed">{plan.remarks}</p>
         <div className="mt-3 text-xs text-[#9CA3AF] font-medium">— {therapistName}, SLP</div>
       </motion.div>
     </div>

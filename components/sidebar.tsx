@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Mic,
@@ -47,6 +47,7 @@ interface SidebarProps {
 
 export function Sidebar({ role, userName, mobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const nav = role === "patient" ? patientNav : therapistNav;
 
   const [displayName, setDisplayName] = useState(userName);
@@ -169,12 +170,20 @@ export function Sidebar({ role, userName, mobileOpen = false, onMobileClose }: S
               <span>Settings</span>
             </div>
           </Link>
-          <Link href="/login" onClick={onMobileClose}>
-            <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer">
-              <LogOut className="w-4 h-4" />
-              <span>Sign out</span>
-            </div>
-          </Link>
+          <button
+            onClick={async () => {
+              onMobileClose?.();
+              try {
+                await fetch("/api/auth/logout", { method: "POST" });
+              } catch { /* ignore */ }
+              localStorage.removeItem("fv_user");
+              router.push("/login");
+            }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Sign out</span>
+          </button>
 
           {/* User card */}
           <div className="mt-3 flex items-center gap-3 px-3 py-3 rounded-xl"

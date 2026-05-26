@@ -63,11 +63,42 @@ export default function SessionsPage() {
   const [selected, setSelected] = useState<StoredSession | null>(null);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("fv_sessions");
-      if (raw) setRealSessions(JSON.parse(raw));
-    } catch { /* ignore */ }
-    setHydrated(true);
+    let cancelled = false;
+
+    async function load() {
+      // Try the API first (authenticated users get their cloud sessions)
+      try {
+        const res = await fetch("/api/sessions");
+        if (res.ok) {
+          const data = await res.json();
+          if (!cancelled && Array.isArray(data.sessions) && data.sessions.length > 0) {
+            // Map API shape to StoredSession shape
+            const mapped: StoredSession[] = data.sessions.map(
+              (s: { id: string; date: string; report: StoredSession["report"] }) => ({
+                id: parseInt(s.id.replace(/\D/g, "").slice(-10), 10) || 0,
+                date: s.date,
+                report: s.report,
+              })
+            );
+            setRealSessions(mapped);
+            setHydrated(true);
+            return;
+          }
+        }
+      } catch { /* fall through to localStorage */ }
+
+      // Fall back to localStorage (offline / unauthenticated)
+      if (!cancelled) {
+        try {
+          const raw = localStorage.getItem("fv_sessions");
+          if (raw) setRealSessions(JSON.parse(raw));
+        } catch { /* ignore */ }
+        setHydrated(true);
+      }
+    }
+
+    load();
+    return () => { cancelled = true; };
   }, []);
 
   // Escape key closes drawer
