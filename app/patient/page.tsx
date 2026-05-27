@@ -57,18 +57,48 @@ export default function PatientDashboard() {
   const [greeting, setGreeting] = useState("Good morning");
 
   useEffect(() => {
+    // Greeting + name from localStorage (instant, no flicker)
     try {
-      const raw = localStorage.getItem("fv_sessions");
-      if (raw) setRealSessions(JSON.parse(raw));
       const user = localStorage.getItem("fv_user");
       if (user) {
         const parsed = JSON.parse(user);
         if (parsed?.name) setDisplayName(parsed.name);
       }
-    } catch { /* ignore parse errors */ }
+    } catch { /* ignore */ }
     const h = new Date().getHours();
     setGreeting(h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening");
-    setHydrated(true);
+
+    // Load sessions: API first (cloud), fall back to localStorage (offline)
+    async function loadSessions() {
+      try {
+        const res = await fetch("/api/sessions");
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.sessions) && data.sessions.length > 0) {
+            // Map API shape → StoredSession shape
+            const mapped: StoredSession[] = data.sessions.map(
+              (s: { id: string; date: string; report: StoredSession["report"] }) => ({
+                id: parseInt(s.id.replace(/\D/g, "").slice(-10), 10) || 0,
+                date: s.date,
+                report: s.report,
+              })
+            );
+            setRealSessions(mapped);
+            setHydrated(true);
+            return;
+          }
+        }
+      } catch { /* fall through */ }
+
+      // Offline / unauthenticated fallback — localStorage
+      try {
+        const raw = localStorage.getItem("fv_sessions");
+        if (raw) setRealSessions(JSON.parse(raw));
+      } catch { /* ignore */ }
+      setHydrated(true);
+    }
+
+    loadSessions();
   }, []);
 
   const hasReal = realSessions.length > 0;
@@ -144,7 +174,8 @@ export default function PatientDashboard() {
     return [...real, ...fill];
   }, [realSessions]);
 
-  const totalCount = realSessions.length + MOCK_PATIENT_SESSIONS.length;
+  // Use real count when available; mock count only as demo fallback
+  const totalCount = hasReal ? realSessions.length : MOCK_PATIENT_SESSIONS.length;
 
   return (
     <div className="max-w-5xl mx-auto space-y-5">
