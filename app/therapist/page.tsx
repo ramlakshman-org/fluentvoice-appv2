@@ -68,9 +68,9 @@ export default function TherapistDashboard() {
   const [apptStatus, setApptStatus] = useState<Record<string, "confirmed" | "cancelled" | null>>({});
   const [displayName, setDisplayName] = useState("Therapist");
 
-  function fetchPatients() {
-    setLoading(true);
-    fetch("/api/therapist/patients")
+  function fetchPatients(showSpinner = false) {
+    if (showSpinner) setLoading(true);
+    fetch("/api/therapist/patients", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data?.patients && data.patients.length > 0) {
@@ -96,10 +96,10 @@ export default function TherapistDashboard() {
       }
     } catch { /* ignore */ }
 
-    fetchPatients();
+    fetchPatients(true);
 
-    // Auto-refresh every 30 seconds so new patient sessions appear automatically
-    const interval = setInterval(fetchPatients, 30_000);
+    // Auto-refresh every 30 seconds — silent (no spinner), just updates the data
+    const interval = setInterval(() => fetchPatients(false), 30_000);
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -153,7 +153,7 @@ export default function TherapistDashboard() {
         </div>
         <div className="flex items-center gap-2 mt-1 shrink-0">
           <button
-            onClick={fetchPatients}
+            onClick={() => fetchPatients(true)}
             disabled={loading}
             className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all border hover:opacity-80 disabled:opacity-40"
             style={{ borderColor: "var(--color-border)", color: "var(--color-navy)", background: "white" }}

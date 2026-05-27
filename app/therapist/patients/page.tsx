@@ -37,7 +37,7 @@ export default function PatientsPage() {
 
   function fetchPatients() {
     setLoading(true);
-    fetch("/api/therapist/patients")
+    fetch("/api/therapist/patients", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data?.patients?.length > 0) {

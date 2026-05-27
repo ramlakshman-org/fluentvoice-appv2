@@ -4,6 +4,8 @@ import { getAuthUser } from "@/lib/auth";
 import { getDb } from "@/lib/mongodb";
 import type { DbSession } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 /** GET /api/sessions — returns the authenticated user's sessions, newest first */
 export async function GET() {
   try {

@@ -73,7 +73,7 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
 
   function fetchData(isInitial = false) {
     if (isInitial) setLoading(true);
-    fetch(`/api/therapist/patients/${id}`)
+    fetch(`/api/therapist/patients/${id}`, { cache: "no-store" })
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
         if (!data) return;

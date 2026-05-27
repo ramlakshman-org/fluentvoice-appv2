@@ -3,6 +3,8 @@ import { getAuthUser } from "@/lib/auth";
 import { getDb } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/therapist/patients/[id]
  * Returns a single patient's info + all their sessions with timestamps.
