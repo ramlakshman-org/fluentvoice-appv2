@@ -80,7 +80,12 @@ export default function PatientsPage() {
       .finally(() => setLoading(false));
   }
 
-  useEffect(() => { fetchPatients(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    fetchPatients();
+    // Auto-refresh every 20 seconds
+    const interval = setInterval(fetchPatients, 20_000);
+    return () => clearInterval(interval);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtered = patients.filter(
     (p) =>

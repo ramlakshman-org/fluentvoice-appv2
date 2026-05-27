@@ -71,7 +71,8 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
   const [saved, setSaved]       = useState(false);
   const [hasUnsaved, setHasUnsaved] = useState(false);
 
-  useEffect(() => {
+  function fetchData(isInitial = false) {
+    if (isInitial) setLoading(true);
     fetch(`/api/therapist/patients/${id}`)
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
@@ -79,11 +80,21 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
         setPatient(data.patient);
         setStats(data.stats);
         setSessions(data.sessions ?? []);
-        setGoals(data.patient.goals?.join("\n") ?? "");
-        setExercises(data.patient.exercises?.join("\n") ?? "");
-        setRemarks(data.patient.remarks ?? "");
+        // Only set treatment plan fields on initial load so edits aren't lost
+        if (isInitial) {
+          setGoals(data.patient.goals?.join("\n") ?? "");
+          setExercises(data.patient.exercises?.join("\n") ?? "");
+          setRemarks(data.patient.remarks ?? "");
+        }
       })
-      .finally(() => setLoading(false));
+      .finally(() => { if (isInitial) setLoading(false); });
+  }
+
+  useEffect(() => {
+    fetchData(true);
+    // Auto-refresh sessions every 20 seconds
+    const interval = setInterval(() => fetchData(false), 20_000);
+    return () => clearInterval(interval);
   }, [id]);
 
   async function handleSave() {
