@@ -9,13 +9,14 @@ function getSecret() {
   return new TextEncoder().encode(secret);
 }
 
-const PROTECTED_PREFIXES = ["/patient", "/therapist", "/settings"];
-
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p));
-  if (!isProtected) return NextResponse.next();
+  const isPatient   = pathname.startsWith("/patient");
+  const isTherapist = pathname.startsWith("/therapist");
+  const isSettings  = pathname.startsWith("/settings");
+
+  if (!isPatient && !isTherapist && !isSettings) return NextResponse.next();
 
   const token = req.cookies.get(COOKIE_NAME)?.value;
 
@@ -26,13 +27,24 @@ export async function middleware(req: NextRequest) {
   }
 
   try {
-    await jwtVerify(token, getSecret());
+    const { payload } = await jwtVerify(token, getSecret());
+    const role = payload.role as string | undefined;
+
+    // Role-gated routes: wrong role → redirect to their own dashboard
+    if (isTherapist && role !== "therapist") {
+      // Patient accidentally on therapist route → send to patient dashboard
+      return NextResponse.redirect(new URL("/patient", req.url));
+    }
+    if (isPatient && role !== "patient") {
+      // Therapist accidentally on patient route → send to therapist dashboard
+      return NextResponse.redirect(new URL("/therapist", req.url));
+    }
+
     return NextResponse.next();
   } catch {
     const loginUrl = new URL("/login", req.url);
     loginUrl.searchParams.set("from", pathname);
     const res = NextResponse.redirect(loginUrl);
-    // Clear the bad cookie
     res.cookies.set({ name: COOKIE_NAME, value: "", maxAge: 0, path: "/" });
     return res;
   }
