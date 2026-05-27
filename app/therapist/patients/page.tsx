@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Users, TrendingUp, TrendingDown, Minus, ArrowRight, Search } from "lucide-react";
-import { useState } from "react";
+import { Users, TrendingUp, TrendingDown, Minus, ArrowRight, Search, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { MOCK_PATIENTS } from "@/lib/mock-data";
 
 const TREND_ICON = {
@@ -18,14 +18,75 @@ const TREND_COLOR = {
 };
 const AVATAR_COLORS = ["#6366F1", "#8B5CF6", "#EC4899", "#1B2B5E", "#10B981", "#F59E0B"];
 
+interface DisplayPatient {
+  id: string;
+  name: string;
+  age: number;
+  condition: string;
+  sessionsCount: number;
+  avgFluency: number;
+  trend: "improving" | "stable" | "declining";
+  nextAppointment: string;
+  joinedDate: string;
+}
+
 export default function PatientsPage() {
   const [query, setQuery] = useState("");
+  const [patients, setPatients] = useState<DisplayPatient[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filtered = MOCK_PATIENTS.filter(
+  useEffect(() => {
+    fetch("/api/therapist/patients")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.patients?.length > 0) {
+          setPatients(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            data.patients.map((p: any) => ({
+              id: p.id,
+              name: p.name,
+              age: p.age ?? 0,
+              condition: p.condition ?? "Fluency disorder",
+              sessionsCount: p.sessionsCount,
+              avgFluency: p.avgFluency,
+              trend: p.trend,
+              nextAppointment: p.nextAppointment ?? "Not scheduled",
+              joinedDate: p.joinedDate ?? "—",
+            }))
+          );
+        } else {
+          // Fall back to mock
+          setPatients(
+            MOCK_PATIENTS.map((p) => ({
+              id: p.id, name: p.name, age: p.age,
+              condition: p.condition, sessionsCount: p.sessionsCount,
+              avgFluency: p.avgFluency, trend: p.trend,
+              nextAppointment: p.nextAppointment, joinedDate: p.joinedDate,
+            }))
+          );
+        }
+      })
+      .catch(() => {
+        setPatients(
+          MOCK_PATIENTS.map((p) => ({
+            id: p.id, name: p.name, age: p.age,
+            condition: p.condition, sessionsCount: p.sessionsCount,
+            avgFluency: p.avgFluency, trend: p.trend,
+            nextAppointment: p.nextAppointment, joinedDate: p.joinedDate,
+          }))
+        );
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = patients.filter(
     (p) =>
       p.name.toLowerCase().includes(query.toLowerCase()) ||
       p.condition.toLowerCase().includes(query.toLowerCase())
   );
+
+  const improving = patients.filter((p) => p.trend === "improving").length;
+  const declining = patients.filter((p) => p.trend === "declining").length;
 
   return (
     <div className="max-w-4xl mx-auto space-y-5">
@@ -38,7 +99,9 @@ export default function PatientsPage() {
           >
             All Patients
           </h1>
-          <p className="text-sm text-[#9CA3AF] mt-0.5">{MOCK_PATIENTS.length} active patients</p>
+          <p className="text-sm text-[#9CA3AF] mt-0.5">
+            {loading ? "Loading…" : `${patients.length} active patient${patients.length !== 1 ? "s" : ""}`}
+          </p>
         </div>
         <div className="flex items-center gap-2 px-3 py-2 rounded-xl border bg-white"
           style={{ borderColor: "var(--color-border)" }}>
@@ -57,9 +120,9 @@ export default function PatientsPage() {
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { icon: Users, val: MOCK_PATIENTS.length, label: "Total Patients", color: "var(--color-navy)", bg: "var(--color-navy-dim)" },
-          { icon: TrendingUp, val: MOCK_PATIENTS.filter((p) => p.trend === "improving").length, label: "Improving", color: "#10B981", bg: "rgba(16,185,129,0.08)" },
-          { icon: TrendingDown, val: MOCK_PATIENTS.filter((p) => p.trend === "declining").length, label: "Declining", color: "#EF4444", bg: "rgba(239,68,68,0.08)" },
+          { icon: Users,         val: patients.length, label: "Total Patients", color: "var(--color-navy)", bg: "var(--color-navy-dim)" },
+          { icon: TrendingUp,    val: improving,       label: "Improving",      color: "#10B981",           bg: "rgba(16,185,129,0.08)" },
+          { icon: TrendingDown,  val: declining,       label: "Declining",      color: "#EF4444",           bg: "rgba(239,68,68,0.08)" },
         ].map((s, i) => (
           <motion.div
             key={s.label}
@@ -73,7 +136,9 @@ export default function PatientsPage() {
               <s.icon className="w-5 h-5" style={{ color: s.color }} />
             </div>
             <div>
-              <div className="text-xl font-black tabnum" style={{ color: "var(--color-navy)" }}>{s.val}</div>
+              <div className="text-xl font-black tabnum" style={{ color: "var(--color-navy)" }}>
+                {loading ? <Loader2 className="w-4 h-4 animate-spin opacity-40" /> : s.val}
+              </div>
               <div className="text-xs text-[#9CA3AF] font-medium">{s.label}</div>
             </div>
           </motion.div>
@@ -81,86 +146,94 @@ export default function PatientsPage() {
       </div>
 
       {/* Patient list */}
-      <div className="space-y-3">
-        {filtered.length === 0 && (
-          <div className="text-center py-16 text-[#9CA3AF]">
-            <p className="font-bold">No patients found</p>
-            <p className="text-sm mt-1">Try a different search term.</p>
-          </div>
-        )}
-        {filtered.map((patient, i) => {
-          const color = AVATAR_COLORS[i % AVATAR_COLORS.length];
-          const initials = patient.name.split(" ").map((w) => w[0]).join("").slice(0, 2);
-          const TrendIcon = TREND_ICON[patient.trend];
-          const trendColor = TREND_COLOR[patient.trend];
-          const sevColor = patient.avgFluency >= 70 ? "#10B981" : patient.avgFluency >= 40 ? "#F59E0B" : "#EF4444";
-          const sevScore = patient.avgFluency >= 70 ? "Good" : patient.avgFluency >= 40 ? "Fair" : "Low";
+      {loading ? (
+        <div className="flex items-center justify-center py-20 text-[#9CA3AF]">
+          <Loader2 className="w-6 h-6 animate-spin mr-2" />
+          Loading patients…
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.length === 0 && (
+            <div className="text-center py-16 text-[#9CA3AF]">
+              <p className="font-bold">No patients found</p>
+              <p className="text-sm mt-1">Try a different search term.</p>
+            </div>
+          )}
+          {filtered.map((patient, i) => {
+            const color = AVATAR_COLORS[i % AVATAR_COLORS.length];
+            const initials = patient.name.split(" ").map((w) => w[0]).join("").slice(0, 2);
+            const TrendIcon = TREND_ICON[patient.trend];
+            const trendColor = TREND_COLOR[patient.trend];
+            const sevColor = patient.avgFluency >= 70 ? "#10B981" : patient.avgFluency >= 40 ? "#F59E0B" : "#EF4444";
+            const sevScore = patient.avgFluency >= 70 ? "Good" : patient.avgFluency >= 40 ? "Fair" : "Low";
 
-          return (
-            <motion.div
-              key={patient.id}
-              initial={{ opacity: 0, x: -12 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.07 }}
-              whileHover={{ x: 3 }}
-            >
-              <Link href={`/therapist/patients/${patient.id}`}>
-                <div
-                  className="flex items-center gap-4 p-5 rounded-2xl border transition-all hover:shadow-md cursor-pointer"
-                  style={{ background: "white", borderColor: "var(--color-border)", boxShadow: "var(--shadow-sm)" }}
-                >
-                  {/* Avatar */}
+            return (
+              <motion.div
+                key={patient.id}
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.07 }}
+                whileHover={{ x: 3 }}
+              >
+                <Link href={`/therapist/patients/${patient.id}`}>
                   <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 font-bold text-sm text-white"
-                    style={{ background: color }}
+                    className="flex items-center gap-4 p-5 rounded-2xl border transition-all hover:shadow-md cursor-pointer"
+                    style={{ background: "white", borderColor: "var(--color-border)", boxShadow: "var(--shadow-sm)" }}
                   >
-                    {initials}
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-[var(--color-navy)] text-sm">{patient.name}</span>
-                      <span className="text-xs text-[#9CA3AF]">· {patient.age} yrs</span>
-                      <span
-                        className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                    <div
+                      className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 font-bold text-sm text-white"
+                      style={{ background: color }}
+                    >
+                      {initials}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-[var(--color-navy)] text-sm">{patient.name}</span>
+                        {patient.age > 0 && (
+                          <span className="text-xs text-[#9CA3AF]">· {patient.age} yrs</span>
+                        )}
+                        <span
+                          className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                          style={{ background: `${trendColor}14`, color: trendColor }}
+                        >
+                          {patient.condition}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 mt-1.5 text-xs text-[#9CA3AF]">
+                        <span>{patient.sessionsCount} session{patient.sessionsCount !== 1 ? "s" : ""}</span>
+                        <span>·</span>
+                        <span>Joined {patient.joinedDate}</span>
+                        {patient.nextAppointment !== "Not scheduled" && (
+                          <>
+                            <span>·</span>
+                            <span>Next: {patient.nextAppointment.split(" ")[0]}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 shrink-0">
+                      <div className="text-right">
+                        <div className="text-xl font-black tabnum" style={{ color: "var(--color-navy)" }}>
+                          {patient.avgFluency > 0 ? patient.avgFluency : "—"}
+                        </div>
+                        <div className="text-[10px] font-bold" style={{ color: sevColor }}>{sevScore}</div>
+                      </div>
+                      <div
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold"
                         style={{ background: `${trendColor}14`, color: trendColor }}
                       >
-                        {patient.condition}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 mt-1.5 text-xs text-[#9CA3AF]">
-                      <span>{patient.sessionsCount} sessions</span>
-                      <span>·</span>
-                      <span>Joined {patient.joinedDate}</span>
-                      <span>·</span>
-                      <span>Next: {patient.nextAppointment.split(" ")[0]}</span>
-                    </div>
-                  </div>
-
-                  {/* Fluency + trend */}
-                  <div className="flex items-center gap-4 shrink-0">
-                    <div className="text-right">
-                      <div className="text-xl font-black tabnum" style={{ color: "var(--color-navy)" }}>
-                        {patient.avgFluency}
+                        <TrendIcon className="w-3.5 h-3.5" />
+                        {patient.trend}
                       </div>
-                      <div className="text-[10px] font-bold" style={{ color: sevColor }}>{sevScore}</div>
+                      <ArrowRight className="w-4 h-4 text-[#9CA3AF]" />
                     </div>
-                    <div
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold"
-                      style={{ background: `${trendColor}14`, color: trendColor }}
-                    >
-                      <TrendIcon className="w-3.5 h-3.5" />
-                      {patient.trend}
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-[#9CA3AF]" />
                   </div>
-                </div>
-              </Link>
-            </motion.div>
-          );
-        })}
-      </div>
+                </Link>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
