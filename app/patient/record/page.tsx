@@ -50,6 +50,7 @@ export default function RecordPage() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [analyzeSeconds, setAnalyzeSeconds] = useState(0);
+  const [savedToCloud, setSavedToCloud] = useState<boolean | null>(null);
   const analyzeTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -241,12 +242,16 @@ export default function RecordPage() {
             timeline: data.timeline ?? [],
           }),
         });
-        if (!saveRes.ok) {
+        if (saveRes.ok) {
+          setSavedToCloud(true);
+        } else {
           const errBody = await saveRes.json().catch(() => ({}));
           console.error("Session save failed:", saveRes.status, errBody);
+          setSavedToCloud(false);
         }
       } catch (saveErr) {
         console.error("Session save error:", saveErr);
+        setSavedToCloud(false);
       }
 
       if (analyzeTimerRef.current) clearInterval(analyzeTimerRef.current);
@@ -624,7 +629,19 @@ export default function RecordPage() {
                 style={{ color: "var(--color-navy)", fontFamily: "var(--font-display)" }}>
                 Here&apos;s your report
               </h2>
-              <p className="text-sm text-[#9CA3AF] mt-1">Session saved to your history</p>
+              {savedToCloud === true && (
+                <p className="text-sm mt-1 font-medium" style={{ color: "#10B981" }}>
+                  ✓ Saved to cloud — visible to your therapist
+                </p>
+              )}
+              {savedToCloud === false && (
+                <p className="text-sm mt-1 font-medium" style={{ color: "#F59E0B" }}>
+                  ⚠ Saved locally only — please sign out and sign back in to sync with your therapist
+                </p>
+              )}
+              {savedToCloud === null && (
+                <p className="text-sm text-[#9CA3AF] mt-1">Session saved to your history</p>
+              )}
             </div>
 
             {/* Gauge + metrics */}
