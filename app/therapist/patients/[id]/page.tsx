@@ -99,7 +99,7 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
 
   async function handleSave() {
     try {
-      await fetch("/api/treatment", {
+      const res = await fetch("/api/treatment", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -109,10 +109,15 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
           remarks,
         }),
       });
-    } catch { /* ignore */ }
-    setSaved(true);
-    setHasUnsaved(false);
-    setTimeout(() => setSaved(false), 2000);
+      if (!res.ok) throw new Error("Save failed");
+      setSaved(true);
+      setHasUnsaved(false);
+      setTimeout(() => setSaved(false), 2000);
+    } catch {
+      setSaved(false);
+      // Brief red flash to signal failure
+      setHasUnsaved(true);
+    }
   }
 
   // Build chart data from sessions (oldest → newest, max 10 points)
