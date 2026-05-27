@@ -97,6 +97,10 @@ export default function TherapistDashboard() {
     } catch { /* ignore */ }
 
     fetchPatients();
+
+    // Auto-refresh every 30 seconds so new patient sessions appear automatically
+    const interval = setInterval(fetchPatients, 30_000);
+    return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
