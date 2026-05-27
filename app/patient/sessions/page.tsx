@@ -351,7 +351,7 @@ export default function SessionsPage() {
                       {selected.report.disfluencies.map((ev, i) => {
                         const evType = ev.event ?? "unknown";
                         const color = DISF_COLORS[evType] ?? "#9CA3AF";
-                        const label = DISF_LABELS[evType] ?? evType.replace("_", " ");
+                        const label = DISF_LABELS[evType] ?? evType.replace(/_/g, " ");
                         return (
                           <div
                             key={i}

@@ -1,5 +1,6 @@
 export type DisfluencyEvent = {
-  event: "block" | "word_rep" | "sound_rep" | "prolongation" | "interjection" | "pause";
+  event: "block" | "word_rep" | "sound_rep" | "prolongation" | "interjection" | "pause"
+       | "repetition" | "filler" | "revision" | "false_start" | "phrase_rep" | "unknown";
   time: string;
   word?: string;
   duration?: number;

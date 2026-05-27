@@ -32,6 +32,13 @@ const DISF_COLORS: Record<string, string> = {
   false_start: "#EC4899", phrase_rep: "#F97316", unknown: "#D1D5DB",
 };
 
+const DISF_LABELS: Record<string, string> = {
+  block: "Block", word_rep: "Word Rep", sound_rep: "Sound Rep",
+  prolongation: "Prolongation", interjection: "Interjection", pause: "Pause",
+  repetition: "Repetition", filler: "Filler", revision: "Revision",
+  false_start: "False Start", phrase_rep: "Phrase Rep", unknown: "Other",
+};
+
 function formatTime(s: number) {
   const m = Math.floor(s / 60);
   const sec = s % 60;
@@ -739,11 +746,12 @@ export default function RecordPage() {
                   {result.disfluencies.map((ev, i) => {
                     const evType = ev.event ?? "unknown";
                     const color = DISF_COLORS[evType] ?? "#9CA3AF";
+                    const label = DISF_LABELS[evType] ?? evType.replace(/_/g, " ");
                     return (
                       <div key={i}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
                         style={{ background: `${color}14`, color, border: `1px solid ${color}28` }}>
-                        <span className="capitalize">{evType.replace("_", " ")}</span>
+                        <span>{label}</span>
                         {ev.word && <span className="opacity-60">&quot;{ev.word}&quot;</span>}
                         <span className="opacity-50">@{ev.time ?? "–"}</span>
                         {ev.duration && (
