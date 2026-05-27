@@ -225,20 +225,29 @@ export default function RecordPage() {
       });
       localStorage.setItem("fv_sessions", JSON.stringify(sessions.slice(0, 20)));
 
-      // Also persist to the database (fire-and-forget — don't block the UI)
-      fetch("/api/sessions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fluency_score: data.fluency_score,
-          severity: data.severity,
-          speech_rate: data.speech_rate,
-          transcript: data.transcript,
-          disfluencies: data.disfluencies ?? [],
-          pauses: Array.isArray(data.pauses) ? data.pauses.length : (data.pauses ?? 0),
-          timeline: data.timeline ?? [],
-        }),
-      }).catch(() => { /* silently ignore if not authenticated */ });
+      // Also persist to the database
+      try {
+        const saveRes = await fetch("/api/sessions", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fluency_score: data.fluency_score,
+            severity: data.severity,
+            speech_rate: data.speech_rate,
+            transcript: data.transcript,
+            disfluencies: data.disfluencies ?? [],
+            pauses: Array.isArray(data.pauses) ? data.pauses.length : (data.pauses ?? 0),
+            timeline: data.timeline ?? [],
+          }),
+        });
+        if (!saveRes.ok) {
+          const errBody = await saveRes.json().catch(() => ({}));
+          console.error("Session save failed:", saveRes.status, errBody);
+        }
+      } catch (saveErr) {
+        console.error("Session save error:", saveErr);
+      }
 
       if (analyzeTimerRef.current) clearInterval(analyzeTimerRef.current);
       setResult(data as AnalysisResult);

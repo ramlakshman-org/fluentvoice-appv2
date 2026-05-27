@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   Users, TrendingUp, TrendingDown, Minus, ArrowRight,
-  Calendar, Check, X, Activity, Loader2,
+  Calendar, Check, X, Activity, Loader2, RefreshCw,
 } from "lucide-react";
 import { MOCK_PATIENTS, MOCK_SESSIONS } from "@/lib/mock-data";
 
@@ -68,15 +68,8 @@ export default function TherapistDashboard() {
   const [apptStatus, setApptStatus] = useState<Record<string, "confirmed" | "cancelled" | null>>({});
   const [displayName, setDisplayName] = useState("Therapist");
 
-  useEffect(() => {
-    try {
-      const user = localStorage.getItem("fv_user");
-      if (user) {
-        const parsed = JSON.parse(user);
-        if (parsed?.name) setDisplayName(parsed.name);
-      }
-    } catch { /* ignore */ }
-
+  function fetchPatients() {
+    setLoading(true);
     fetch("/api/therapist/patients")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
@@ -92,6 +85,19 @@ export default function TherapistDashboard() {
       })
       .catch(() => useMockFallback())
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    try {
+      const user = localStorage.getItem("fv_user");
+      if (user) {
+        const parsed = JSON.parse(user);
+        if (parsed?.name) setDisplayName(parsed.name);
+      }
+    } catch { /* ignore */ }
+
+    fetchPatients();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function useMockFallback() {
@@ -141,14 +147,26 @@ export default function TherapistDashboard() {
             )}
           </div>
         </div>
-        <Link
-          href="/therapist/patients"
-          className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all hover:opacity-90 mt-1"
-          style={{ background: "var(--color-navy)", color: "white" }}
-        >
-          <Users className="w-4 h-4" aria-hidden="true" />
-          All patients
-        </Link>
+        <div className="flex items-center gap-2 mt-1 shrink-0">
+          <button
+            onClick={fetchPatients}
+            disabled={loading}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all border hover:opacity-80 disabled:opacity-40"
+            style={{ borderColor: "var(--color-border)", color: "var(--color-navy)", background: "white" }}
+            title="Refresh patient data"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+          <Link
+            href="/therapist/patients"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all hover:opacity-90"
+            style={{ background: "var(--color-navy)", color: "white" }}
+          >
+            <Users className="w-4 h-4" aria-hidden="true" />
+            All patients
+          </Link>
+        </div>
       </motion.div>
 
       {/* Summary stats */}

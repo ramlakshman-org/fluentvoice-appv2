@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Users, TrendingUp, TrendingDown, Minus, ArrowRight, Search, Loader2 } from "lucide-react";
+import { Users, TrendingUp, TrendingDown, Minus, ArrowRight, Search, Loader2, RefreshCw } from "lucide-react";
 import { useState, useEffect } from "react";
 import { MOCK_PATIENTS } from "@/lib/mock-data";
 
@@ -35,7 +35,8 @@ export default function PatientsPage() {
   const [patients, setPatients] = useState<DisplayPatient[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  function fetchPatients() {
+    setLoading(true);
     fetch("/api/therapist/patients")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
@@ -77,7 +78,9 @@ export default function PatientsPage() {
         );
       })
       .finally(() => setLoading(false));
-  }, []);
+  }
+
+  useEffect(() => { fetchPatients(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtered = patients.filter(
     (p) =>
@@ -103,17 +106,28 @@ export default function PatientsPage() {
             {loading ? "Loading…" : `${patients.length} active patient${patients.length !== 1 ? "s" : ""}`}
           </p>
         </div>
-        <div className="flex items-center gap-2 px-3 py-2 rounded-xl border bg-white"
-          style={{ borderColor: "var(--color-border)" }}>
-          <Search className="w-4 h-4 text-[#9CA3AF]" />
-          <input
-            type="text"
-            placeholder="Search patients..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="text-sm outline-none bg-transparent w-48"
-            style={{ color: "var(--color-navy)" }}
-          />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={fetchPatients}
+            disabled={loading}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold transition-all border hover:opacity-80 disabled:opacity-40"
+            style={{ borderColor: "var(--color-border)", color: "var(--color-navy)", background: "white" }}
+            title="Refresh"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+          </button>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl border bg-white"
+            style={{ borderColor: "var(--color-border)" }}>
+            <Search className="w-4 h-4 text-[#9CA3AF]" />
+            <input
+              type="text"
+              placeholder="Search patients..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="text-sm outline-none bg-transparent w-48"
+              style={{ color: "var(--color-navy)" }}
+            />
+          </div>
         </div>
       </div>
 
