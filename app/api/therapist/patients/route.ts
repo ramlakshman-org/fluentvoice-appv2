@@ -18,10 +18,11 @@ export async function GET() {
 
     const db = await getDb();
 
-    // Fetch all patients
+    // Fetch only patients assigned to THIS therapist
+    const therapistOid = new ObjectId(jwt.sub);
     const users = db.collection("users");
     const patients = await users
-      .find({ role: "patient" })
+      .find({ role: "patient", therapistId: therapistOid })
       .project({ _id: 1, name: 1, email: 1, joinedDate: 1 })
       .toArray();
 

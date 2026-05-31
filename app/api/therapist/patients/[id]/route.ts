@@ -49,12 +49,13 @@ export async function GET(
     const mappedSessions = rawSessions.map((s) => ({
       id: (s._id as ObjectId).toString(),
       // Full timestamp for display: "May 27, 2026, 11:59 AM"
-      date: new Date(s.createdAt).toLocaleDateString("en-US", {
+      date: new Date(s.createdAt).toLocaleString("en-IN", {
         month: "short",
         day: "numeric",
         year: "numeric",
         hour: "numeric",
         minute: "2-digit",
+        timeZone: "Asia/Kolkata",
       }),
       // ISO string for sorting/relative time
       createdAt: s.createdAt,

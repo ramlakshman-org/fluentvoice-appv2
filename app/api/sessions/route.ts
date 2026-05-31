@@ -22,9 +22,10 @@ export async function GET() {
 
     const mapped = results.map((s) => ({
       id: s._id!.toString(),
-      date: new Date(s.createdAt).toLocaleDateString("en-US", {
+      date: new Date(s.createdAt).toLocaleString("en-IN", {
         month: "short", day: "numeric", year: "numeric",
         hour: "numeric", minute: "2-digit",
+        timeZone: "Asia/Kolkata",
       }),
       report: {
         fluency_score: s.fluency_score,

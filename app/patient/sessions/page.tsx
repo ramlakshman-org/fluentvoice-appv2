@@ -42,6 +42,44 @@ function sevColor(s: string) {
   return s === "mild" ? "#10B981" : s === "moderate" ? "#F59E0B" : "#EF4444";
 }
 
+function generateInsights(report: StoredSession["report"]): string[] {
+  const insights: string[] = [];
+  const { fluency_score, severity, speech_rate, disfluencies } = report;
+
+  // 1. Dominant disfluency
+  if (disfluencies.length > 0) {
+    const counts: Record<string, number> = {};
+    for (const ev of disfluencies) {
+      const t = ev.event ?? "unknown";
+      counts[t] = (counts[t] ?? 0) + 1;
+    }
+    const dominant = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+    const label = DISF_LABELS[dominant[0]] ?? dominant[0].replace(/_/g, " ");
+    insights.push(`Dominant disfluency: ${label} (${dominant[1]} event${dominant[1] !== 1 ? "s" : ""})`);
+  } else {
+    insights.push("No disfluency events detected in this session.");
+  }
+
+  // 2. Speech rate
+  if (speech_rate > 0 && speech_rate <= 300) {
+    const rate = Math.round(speech_rate);
+    if (rate < 100) insights.push(`Speech rate ${rate} wpm — slower than usual, may reflect hesitation or blocking.`);
+    else if (rate <= 160) insights.push(`Speech rate ${rate} wpm — within the typical fluent range (100–160 wpm).`);
+    else if (rate <= 200) insights.push(`Speech rate ${rate} wpm — slightly fast; breath support may be strained.`);
+    else insights.push(`Speech rate ${rate} wpm — very fast; consider slowing down for clarity.`);
+  }
+
+  // 3. Severity + score
+  if (severity === "mild")
+    insights.push(`Severity: Mild — fluency score ${fluency_score.toFixed(0)}/100. Good session, keep it up.`);
+  else if (severity === "moderate")
+    insights.push(`Severity: Moderate — fluency score ${fluency_score.toFixed(0)}/100. Focus on the exercises in your treatment plan.`);
+  else
+    insights.push(`Severity: Severe — fluency score ${fluency_score.toFixed(0)}/100. Share this session with your therapist.`);
+
+  return insights;
+}
+
 const mockAsStored: StoredSession[] = MOCK_SESSIONS
   .filter((s) => s.patientId === "p1")
   .map((s) => ({
@@ -326,6 +364,35 @@ export default function SessionsPage() {
                     ))}
                   </div>
                 </div>
+
+                {/* Key Insights */}
+                {(() => {
+                  const insights = generateInsights(selected.report);
+                  return (
+                    <div
+                      className="p-4 rounded-2xl"
+                      style={{ background: "rgba(27,43,94,0.04)", border: "1px solid rgba(27,43,94,0.08)" }}
+                    >
+                      <div className="flex items-center gap-2 mb-3">
+                        <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--color-gold)" }} aria-hidden="true" />
+                        <span className="text-xs font-bold uppercase tracking-widest text-[#9CA3AF]">Key Insights</span>
+                      </div>
+                      <ul className="space-y-2">
+                        {insights.map((ins, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-[#374151] leading-snug">
+                            <span
+                              className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black shrink-0 mt-0.5"
+                              style={{ background: "var(--color-navy)", color: "white" }}
+                            >
+                              {i + 1}
+                            </span>
+                            {ins}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })()}
 
                 {/* Transcript */}
                 {selected.report.transcript && (
