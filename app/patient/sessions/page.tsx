@@ -109,18 +109,20 @@ export default function SessionsPage() {
         const res = await fetch("/api/sessions");
         if (res.ok) {
           const data = await res.json();
-          if (!cancelled && Array.isArray(data.sessions) && data.sessions.length > 0) {
-            // Map API shape to StoredSession shape
-            const mapped: StoredSession[] = data.sessions.map(
-              (s: { id: string; date: string; report: StoredSession["report"] }) => ({
-                id: parseInt(s.id.replace(/\D/g, "").slice(-10), 10) || 0,
-                date: s.date,
-                report: s.report,
-              })
-            );
-            setRealSessions(mapped);
+          if (!cancelled) {
+            if (Array.isArray(data.sessions) && data.sessions.length > 0) {
+              // Map API shape to StoredSession shape
+              const mapped: StoredSession[] = data.sessions.map(
+                (s: { id: string; date: string; report: StoredSession["report"] }) => ({
+                  id: parseInt(s.id.replace(/\D/g, "").slice(-10), 10) || 0,
+                  date: s.date,
+                  report: s.report,
+                })
+              );
+              setRealSessions(mapped);
+            }
             setHydrated(true);
-            return;
+            return; // API succeeded — never fall through to localStorage
           }
         }
       } catch { /* fall through to localStorage */ }
