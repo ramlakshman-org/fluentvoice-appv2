@@ -59,13 +59,18 @@ function toDisplay(p: ApiPatient): DisplayPatient {
   };
 }
 
+interface LiveAppointment {
+  id: string; patientName: string; date: string; time: string;
+  status: "pending" | "confirmed" | "cancelled"; type: string;
+}
+
 export default function TherapistDashboard() {
   const [patients, setPatients] = useState<DisplayPatient[]>([]);
   const [loading, setLoading] = useState(true);
   const [usingMock, setUsingMock] = useState(false);
   const [totalSessions, setTotalSessions] = useState(0);
   const [avgFluency, setAvgFluency] = useState(0);
-  const [apptStatus, setApptStatus] = useState<Record<string, "confirmed" | "cancelled" | null>>({});
+  const [appointments, setAppointments] = useState<LiveAppointment[]>([]);
   const [displayName, setDisplayName] = useState("Therapist");
 
   function fetchPatients(showSpinner = false) {
@@ -98,8 +103,18 @@ export default function TherapistDashboard() {
 
     fetchPatients(true);
 
-    // Auto-refresh every 30 seconds — silent (no spinner), just updates the data
-    const interval = setInterval(() => fetchPatients(false), 30_000);
+    // Fetch live appointments
+    fetch("/api/appointments", { cache: "no-store" })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.appointments) setAppointments(d.appointments); });
+
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(() => {
+      fetchPatients(false);
+      fetch("/api/appointments", { cache: "no-store" })
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d?.appointments) setAppointments(d.appointments); });
+    }, 30_000);
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -299,7 +314,7 @@ export default function TherapistDashboard() {
         )}
       </div>
 
-      {/* Appointments */}
+      {/* Appointments — live from DB */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -307,77 +322,69 @@ export default function TherapistDashboard() {
         className="p-6 rounded-2xl border"
         style={{ background: "white", borderColor: "var(--color-border)", boxShadow: "var(--shadow-sm)" }}
       >
-        <h3 className="font-bold text-[var(--color-navy)] text-sm mb-5">Upcoming Appointments</h3>
-        {loading ? (
-          <div className="flex items-center gap-2 text-sm text-[#9CA3AF] py-4">
-            <Loader2 className="w-4 h-4 animate-spin" /> Loading…
-          </div>
+        <h3 className="font-bold text-[var(--color-navy)] text-sm mb-5">
+          Upcoming Appointments
+          {appointments.filter(a => a.status === "pending").length > 0 && (
+            <span className="ml-2 text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-600">
+              {appointments.filter(a => a.status === "pending").length} pending
+            </span>
+          )}
+        </h3>
+        {appointments.filter(a => a.status !== "cancelled").length === 0 ? (
+          <p className="text-sm text-[#9CA3AF] py-2">No upcoming appointments.</p>
         ) : (
           <div className="space-y-3">
-            {patients.map((p, i) => {
-              const apptDate = p.nextAppointment === "Not scheduled" ? null : p.nextAppointment;
-              const [date, time] = apptDate ? apptDate.split(" ") : ["Not scheduled", ""];
+            {appointments.filter(a => a.status !== "cancelled").map((a, i) => {
+              const initials = a.patientName.split(" ").map(w => w[0]).join("").slice(0, 2);
               const color = AVATAR_COLORS[i % AVATAR_COLORS.length];
-              const initials = p.name.split(" ").map((w) => w[0]).join("").slice(0, 2);
-              const status = apptStatus[p.id] ?? null;
+
+              async function updateStatus(status: "confirmed" | "cancelled") {
+                await fetch(`/api/appointments/${a.id}`, {
+                  method: "PUT",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ status }),
+                });
+                // Re-fetch appointments from DB
+                fetch("/api/appointments", { cache: "no-store" })
+                  .then(r => r.ok ? r.json() : null)
+                  .then(d => { if (d?.appointments) setAppointments(d.appointments); });
+              }
+
               return (
-                <div
-                  key={p.id}
-                  className="flex items-center gap-3 p-2 rounded-xl transition-all"
-                  style={{
-                    background:
-                      status === "confirmed" ? "rgba(16,185,129,0.05)"
-                      : status === "cancelled" ? "rgba(239,68,68,0.05)"
-                      : "transparent",
-                  }}
-                >
-                  <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold text-white"
-                    style={{ background: color }}
-                  >
+                <div key={a.id} className="flex items-center gap-3 p-2 rounded-xl transition-all"
+                  style={{ background: a.status === "confirmed" ? "rgba(16,185,129,0.05)" : "transparent" }}>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold text-white" style={{ background: color }}>
                     {initials}
                   </div>
                   <div className="flex-1">
-                    <span className="text-sm font-semibold text-[var(--color-navy)]">{p.name}</span>
-                    <span className="text-xs text-[#9CA3AF] ml-2">{p.condition}</span>
+                    <span className="text-sm font-semibold text-[var(--color-navy)]">{a.patientName}</span>
+                    <span className="text-xs text-[#9CA3AF] ml-2">{a.type}</span>
                   </div>
                   <div className="text-right text-xs">
-                    <div className="font-bold text-[var(--color-navy)]">{date}</div>
-                    {time && <div className="text-[#9CA3AF]">{time}</div>}
+                    <div className="font-bold text-[var(--color-navy)]">{a.date}</div>
+                    <div className="text-[#9CA3AF]">{a.time}</div>
                   </div>
-                  {status === null ? (
+                  {a.status === "pending" ? (
                     <div className="flex gap-2">
-                      <button
-                        onClick={() => setApptStatus((prev) => ({ ...prev, [p.id]: "cancelled" }))}
-                        className="text-xs font-bold px-3 py-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors border border-red-100 flex items-center gap-1"
-                      >
+                      <button onClick={() => updateStatus("cancelled")}
+                        className="text-xs font-bold px-3 py-1.5 rounded-lg text-red-500 hover:bg-red-50 border border-red-100 flex items-center gap-1">
                         <X className="w-3 h-3" /> Cancel
                       </button>
-                      <button
-                        onClick={() => setApptStatus((prev) => ({ ...prev, [p.id]: "confirmed" }))}
-                        className="text-xs font-bold px-3 py-1.5 rounded-lg text-white transition-colors flex items-center gap-1"
-                        style={{ background: "var(--color-navy)" }}
-                      >
+                      <button onClick={() => updateStatus("confirmed")}
+                        className="text-xs font-bold px-3 py-1.5 rounded-lg text-white flex items-center gap-1"
+                        style={{ background: "var(--color-navy)" }}>
                         <Check className="w-3 h-3" /> Confirm
                       </button>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <span
-                        className="text-xs font-bold px-3 py-1.5 rounded-lg capitalize flex items-center gap-1"
-                        style={{
-                          background: status === "confirmed" ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)",
-                          color: status === "confirmed" ? "#10B981" : "#EF4444",
-                        }}
-                      >
-                        {status === "confirmed" ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-                        {status}
+                      <span className="text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1"
+                        style={{ background: "rgba(16,185,129,0.1)", color: "#10B981" }}>
+                        <Check className="w-3 h-3" /> Confirmed
                       </span>
-                      <button
-                        onClick={() => setApptStatus((prev) => ({ ...prev, [p.id]: null }))}
-                        className="text-[10px] text-[#9CA3AF] hover:text-[var(--color-navy)] transition-colors"
-                      >
-                        Undo
+                      <button onClick={() => updateStatus("cancelled")}
+                        className="text-[10px] text-[#9CA3AF] hover:text-red-500 transition-colors">
+                        Cancel
                       </button>
                     </div>
                   )}

@@ -233,6 +233,22 @@ export default function RecordPage() {
       });
       localStorage.setItem("fv_sessions", JSON.stringify(sessions.slice(0, 20)));
 
+      // Upload audio to Cloudinary (fire-and-forget — don't block the UI)
+      let audioUrl: string | null = null;
+      try {
+        const audioForm = new FormData();
+        audioForm.append("audio", audioBlob, `recording.${ext}`);
+        const uploadRes = await fetch("/api/upload-audio", {
+          method: "POST",
+          body: audioForm,
+          credentials: "include",
+        });
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          audioUrl = uploadData.url ?? null;
+        }
+      } catch { /* audio upload failure doesn't block session save */ }
+
       // Also persist to the database
       try {
         const saveRes = await fetch("/api/sessions", {
@@ -247,6 +263,7 @@ export default function RecordPage() {
             disfluencies: data.disfluencies ?? [],
             pauses: Array.isArray(data.pauses) ? data.pauses.length : (data.pauses ?? 0),
             timeline: data.timeline ?? [],
+            ...(audioUrl ? { audioUrl } : {}),
           }),
         });
         if (saveRes.ok) {

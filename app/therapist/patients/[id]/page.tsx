@@ -29,6 +29,7 @@ interface Session {
   transcript: string;
   disfluencies: Array<{ event: string; word?: string; time: string; duration?: number }>;
   pauses: number;
+  audioUrl?: string;     // Cloudinary URL for replay
 }
 
 interface PatientData {
@@ -352,6 +353,16 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
                   ))}
                 </div>
               </div>
+
+              {/* Audio replay */}
+              {selected.audioUrl && (
+                <div className="p-4 rounded-2xl border" style={{ background: "white", borderColor: "var(--color-border)", boxShadow: "var(--shadow-sm)" }}>
+                  <div className="text-xs font-bold uppercase tracking-widest text-[#9CA3AF] mb-3">Session Recording</div>
+                  <audio controls src={selected.audioUrl} className="w-full" style={{ borderRadius: 8 }}>
+                    Your browser does not support audio playback.
+                  </audio>
+                </div>
+              )}
 
               {/* Transcript */}
               {selected.transcript && (

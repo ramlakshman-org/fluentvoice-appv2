@@ -14,6 +14,7 @@ import {
   Activity,
   ChevronRight,
   X,
+  User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,16 +27,19 @@ interface NavItem {
 }
 
 const patientNav: NavItem[] = [
-  { label: "Dashboard", href: "/patient", icon: LayoutDashboard },
-  { label: "Record", href: "/patient/record", icon: Mic },
-  { label: "My Sessions", href: "/patient/sessions", icon: Activity },
-  { label: "Treatment Plan", href: "/patient/treatment", icon: Calendar },
+  { label: "Dashboard",      href: "/patient",              icon: LayoutDashboard },
+  { label: "Record",         href: "/patient/record",       icon: Mic },
+  { label: "My Sessions",    href: "/patient/sessions",     icon: Activity },
+  { label: "Treatment Plan", href: "/patient/treatment",    icon: Calendar },
+  { label: "Appointments",   href: "/patient/appointments", icon: Calendar },
+  { label: "My Profile",     href: "/patient/profile",      icon: User },
 ];
 
 const therapistNav: NavItem[] = [
-  { label: "Dashboard", href: "/therapist", icon: LayoutDashboard },
-  { label: "Patients", href: "/therapist/patients", icon: Users },
+  { label: "Dashboard",    href: "/therapist",          icon: LayoutDashboard },
+  { label: "Patients",     href: "/therapist/patients", icon: Users },
   { label: "Appointments", href: "/therapist/appointments", icon: Calendar },
+  { label: "My Profile",   href: "/therapist/profile",  icon: User },
 ];
 
 interface SidebarProps {

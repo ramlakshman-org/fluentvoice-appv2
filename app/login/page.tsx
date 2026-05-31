@@ -349,7 +349,15 @@ function LoginForm() {
             )}
           </button>
 
-          <p className="text-center text-xs text-[#9CA3AF] mt-5">
+          {mode === "signin" && (
+            <p className="text-center text-xs mt-3">
+              <a href="/forgot-password" className="text-[#9CA3AF] underline hover:text-[var(--color-navy)] transition-colors">
+                Forgot password?
+              </a>
+            </p>
+          )}
+
+          <p className="text-center text-xs text-[#9CA3AF] mt-4">
             {mode === "signin" ? (
               <>No account?{" "}
                 <button onClick={() => { setMode("register"); setError(""); }} className="underline hover:text-[var(--color-navy)] transition-colors">

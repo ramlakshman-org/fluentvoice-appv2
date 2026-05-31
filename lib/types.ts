@@ -27,7 +27,37 @@ export interface DbSession {
   }>;
   pauses: number;
   timeline: unknown[];
+  audioUrl?: string;      // Cloudinary URL for replay
   createdAt: Date;
+}
+
+export interface DbAppointment {
+  _id?: ObjectId;
+  patientId: ObjectId;
+  therapistId: ObjectId;
+  patientName: string;
+  date: string;           // "YYYY-MM-DD"
+  time: string;           // "HH:MM"
+  durationMinutes: number;
+  type: "in-clinic" | "telehealth";
+  status: "pending" | "confirmed" | "cancelled";
+  notes: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface DbProfile {
+  _id?: ObjectId;
+  userId: ObjectId;
+  role: "patient" | "therapist";
+  phone?: string;
+  age?: number;
+  condition?: string;           // patient
+  bio?: string;                 // therapist
+  specialty?: string;           // therapist
+  licenseNumber?: string;       // therapist
+  clinicName?: string;          // therapist
+  updatedAt: Date;
 }
 
 export interface DbTreatmentPlan {

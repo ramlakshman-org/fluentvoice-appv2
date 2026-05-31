@@ -66,6 +66,7 @@ export async function GET(
       disfluencies: s.disfluencies ?? [],
       pauses: s.pauses ?? 0,
       timeline: s.timeline ?? [],
+      audioUrl: s.audioUrl ?? null,
     }));
 
     // Compute stats

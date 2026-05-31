@@ -27,6 +27,7 @@ export async function GET() {
         hour: "numeric", minute: "2-digit",
         timeZone: "Asia/Kolkata",
       }),
+      audioUrl: s.audioUrl ?? null,
       report: {
         fluency_score: s.fluency_score,
         severity: s.severity,
@@ -61,6 +62,7 @@ export async function POST(req: NextRequest) {
       disfluencies,
       pauses,
       timeline,
+      audioUrl,
     } = body;
 
     if (typeof fluency_score !== "number") {
@@ -79,6 +81,7 @@ export async function POST(req: NextRequest) {
       disfluencies: disfluencies ?? [],
       pauses: pauses ?? 0,
       timeline: timeline ?? [],
+      ...(audioUrl ? { audioUrl } : {}),
       createdAt: new Date(),
     });
 
