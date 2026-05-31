@@ -41,20 +41,25 @@ export default function PatientsPage() {
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data?.patients?.length > 0) {
-          setPatients(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            data.patients.map((p: any) => ({
-              id: p.id,
-              name: p.name,
-              age: p.age ?? 0,
-              condition: p.condition ?? "Fluency disorder",
-              sessionsCount: p.sessionsCount,
-              avgFluency: p.avgFluency,
-              trend: p.trend,
-              nextAppointment: p.nextAppointment ?? "Not scheduled",
-              joinedDate: p.joinedDate ?? "—",
-            }))
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const mapped = data.patients.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            age: p.age ?? 0,
+            condition: p.condition ?? "Fluency disorder",
+            sessionsCount: p.sessionsCount,
+            avgFluency: p.avgFluency,
+            trend: p.trend,
+            nextAppointment: p.nextAppointment ?? "Not scheduled",
+            joinedDate: p.joinedDate ?? "—",
+          }));
+          // Sort: most sessions first, then alphabetically
+          mapped.sort((a: DisplayPatient, b: DisplayPatient) =>
+            b.sessionsCount !== a.sessionsCount
+              ? b.sessionsCount - a.sessionsCount
+              : a.name.localeCompare(b.name)
           );
+          setPatients(mapped);
         } else {
           // Fall back to mock
           setPatients(
