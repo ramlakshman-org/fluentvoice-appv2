@@ -30,6 +30,13 @@ export async function POST(req: NextRequest) {
     const now = new Date();
     const joinedDate = now.toLocaleDateString("en-US", { month: "short", year: "numeric" });
 
+    // For patients: auto-assign to the first therapist in the system
+    let therapistId: import("mongodb").ObjectId | undefined;
+    if (role === "patient") {
+      const therapist = await users.findOne({ role: "therapist" });
+      if (therapist) therapistId = therapist._id as import("mongodb").ObjectId;
+    }
+
     const result = await users.insertOne({
       email: email.toLowerCase().trim(),
       passwordHash,
@@ -37,6 +44,7 @@ export async function POST(req: NextRequest) {
       role,
       joinedDate,
       createdAt: now,
+      ...(therapistId ? { therapistId } : {}),
     });
 
     const userId = result.insertedId.toString();
