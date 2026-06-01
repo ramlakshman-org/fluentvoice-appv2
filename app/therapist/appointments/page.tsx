@@ -9,7 +9,7 @@ const AVATAR_COLORS = ["#6366F1", "#8B5CF6", "#EC4899", "#1B2B5E", "#10B981", "#
 type ApptStatus = "pending" | "confirmed" | "cancelled";
 
 interface Appointment {
-  _id: string;
+  id: string;
   patientId: string;
   patientName: string;
   date: string;
@@ -133,11 +133,11 @@ export default function TherapistAppointmentsPage() {
             const color = AVATAR_COLORS[i % AVATAR_COLORS.length];
             const initials = (appt.patientName || "?")
               .split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2);
-            const isUpdating = updating === appt._id;
+            const isUpdating = updating === appt.id;
 
             return (
               <motion.div
-                key={appt._id}
+                key={appt.id}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
@@ -187,14 +187,14 @@ export default function TherapistAppointmentsPage() {
                     <div className="flex gap-2 shrink-0">
                       <button
                         disabled={isUpdating}
-                        onClick={() => updateStatus(appt._id, "cancelled")}
+                        onClick={() => updateStatus(appt.id, "cancelled")}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-red-500 border border-red-100 hover:bg-red-50 transition-colors disabled:opacity-50"
                       >
                         <X className="w-3.5 h-3.5" /> Cancel
                       </button>
                       <button
                         disabled={isUpdating}
-                        onClick={() => updateStatus(appt._id, "confirmed")}
+                        onClick={() => updateStatus(appt.id, "confirmed")}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white transition-colors hover:opacity-90 disabled:opacity-50"
                         style={{ background: "var(--color-navy)" }}
                       >
@@ -218,7 +218,7 @@ export default function TherapistAppointmentsPage() {
                       </span>
                       <button
                         disabled={isUpdating}
-                        onClick={() => updateStatus(appt._id, "pending")}
+                        onClick={() => updateStatus(appt.id, "pending")}
                         className="text-[10px] font-medium text-[#9CA3AF] hover:text-[var(--color-navy)] transition-colors disabled:opacity-50"
                       >
                         Undo
