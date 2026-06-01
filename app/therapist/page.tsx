@@ -194,7 +194,7 @@ export default function TherapistDashboard() {
           { icon: Users,      val: patients.length, label: "Active Patients",       color: "var(--color-navy)", bg: "var(--color-navy-dim)" },
           { icon: Activity,   val: totalSessions,   label: "Sessions This Month",   color: "#6366F1",           bg: "rgba(99,102,241,0.08)" },
           { icon: TrendingUp, val: avgFluency,       label: "Avg Fluency Score",    color: "#10B981",           bg: "rgba(16,185,129,0.08)" },
-          { icon: Calendar,   val: 3,                label: "Upcoming Appointments", color: "var(--color-gold)", bg: "var(--color-gold-dim)" },
+          { icon: Calendar,   val: appointments.filter(a => a.status === "pending").length, label: "Upcoming Appointments", color: "var(--color-gold)", bg: "var(--color-gold-dim)" },
         ].map((s, i) => (
           <motion.div
             key={s.label}
